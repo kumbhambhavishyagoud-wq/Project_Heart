@@ -576,16 +576,22 @@ def history():
         PredictionHistory.created_at.desc()
     ).all()
 
-    # Parse JSON text back into objects for template usage if needed
+    # Parse JSON text or handle None safely for all records
     for record in history_records:
-        if isinstance(record.input_data, str):
+        if record.input_data is None:
+            record.input_data = {}
+        elif isinstance(record.input_data, str):
             try:
                 record.input_data = json.loads(record.input_data)
             except Exception:
                 record.input_data = {}
-        if isinstance(record.health_tips, str):
+
+        if record.health_tips is None:
+            record.health_tips = []
+        elif isinstance(record.health_tips, str):
             try:
-                record.health_tips = json.loads(record.health_tips)
+                parsed_tips = json.loads(record.health_tips)
+                record.health_tips = parsed_tips if isinstance(parsed_tips, list) else [parsed_tips]
             except Exception:
                 record.health_tips = [record.health_tips]
 
@@ -602,15 +608,21 @@ def history():
             flash("Report not found.", "warning")
             return redirect(url_for("history"))
         
-        # Parse selected record as well
-        if isinstance(selected_record.input_data, str):
+        # Parse selected record safely as well
+        if selected_record.input_data is None:
+            selected_record.input_data = {}
+        elif isinstance(selected_record.input_data, str):
             try:
                 selected_record.input_data = json.loads(selected_record.input_data)
             except Exception:
                 selected_record.input_data = {}
-        if isinstance(selected_record.health_tips, str):
+
+        if selected_record.health_tips is None:
+            selected_record.health_tips = []
+        elif isinstance(selected_record.health_tips, str):
             try:
-                selected_record.health_tips = json.loads(selected_record.health_tips)
+                parsed_tips = json.loads(selected_record.health_tips)
+                selected_record.health_tips = parsed_tips if isinstance(parsed_tips, list) else [parsed_tips]
             except Exception:
                 selected_record.health_tips = [selected_record.health_tips]
 
@@ -619,7 +631,6 @@ def history():
         history_records=history_records,
         selected_record=selected_record
     )
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
