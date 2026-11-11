@@ -1654,57 +1654,57 @@ def logout():
 @app.route("/history")
 @login_required
 def history():
+    """
+    Display the signed-in user's saved predictions.
 
-    # Fetch only this logged-in user's predictions.
-    history_records = PredictionHistory.query.filter_by(
-
+    Important: database TEXT columns are never overwritten with Python dict/list
+    values. That prevents SQLAlchemy autoflush from trying to save parsed data.
+    """
+    records = PredictionHistory.query.filter_by(
         user_id=current_user.id
-
     ).order_by(
-
         PredictionHistory.created_at.desc()
-
     ).all()
 
-    # Optional selected history record.
-    history_id = request.args.get(
-        "history_id",
-        type=int
-    )
-
+    history_records = []
     selected_record = None
+    history_id = request.args.get("history_id", type=int)
 
-    if history_id:
+    for record in records:
+        parsed_inputs = parse_history_value(record.input_data, {})
+        if not isinstance(parsed_inputs, dict):
+            parsed_inputs = {}
 
-        selected_record = PredictionHistory.query.filter_by(
+        parsed_tips = normalize_history_tips(record.health_tips)
 
-            id=history_id,
+        # A separate view object keeps the SQLAlchemy model untouched.
+        history_item = SimpleNamespace(
+            id=record.id,
+            user_id=record.user_id,
+            created_at=record.created_at,
+            prediction=record.prediction,
+            disease_probability=record.disease_probability,
+            healthy_probability=record.healthy_probability,
+            input_data=parsed_inputs,
+            ai_analysis=record.ai_analysis,
+            health_tips=parsed_tips
+        )
 
-            user_id=current_user.id
+        history_records.append(history_item)
 
-        ).first()
+        if history_id is not None and record.id == history_id:
+            selected_record = history_item
 
-        if selected_record is None:
+    if history_id is not None and selected_record is None:
+        flash("Report not found.", "warning")
+        return redirect(url_for("history"))
 
-            flash(
-                "Report not found.",
-                "warning"
-            )
-
-            return redirect(
-                url_for("history")
-            )
-
-    # History information is sent ONLY to history.html.
     return render_template(
-
         "history.html",
-
         history_records=history_records,
-
         selected_record=selected_record
-
     )
+
 
 
 # =========================================================
