@@ -972,15 +972,11 @@
 
             <div class="history-card-body">
 
+                {# The Flask route already parses JSON and normalizes this to a list. #}
                 {% set tips = selected_record.health_tips or [] %}
 
                 {% if tips is string %}
-                    {% set tips = tips|trim %}
-                    {% if tips.startswith('[') %}
-                        {% set tips = tips|from_json if false else [tips] %}
-                    {% else %}
-                        {% set tips = tips.split('\n') %}
-                    {% endif %}
+                    {% set tips = tips.split('\n') %}
                 {% endif %}
 
                 {% if tips is mapping %}
