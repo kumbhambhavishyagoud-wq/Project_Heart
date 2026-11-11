@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}">
+{% endblock %}
+{% block body %}
+<a href="/">Back</a>
+<div>
+      
+    <div class="abstract">
+        
+        <h3>Abstarct</h3>
+        <div>Heart disease is one of the most complex diseases, and globally, many people suffer from it. Timely 
+and efficient identification of heart disease plays a key role in healthcare, particularly in cardiology. 
+In this article, we propose an efficient and accurate system to diagnose heart disease based on machine 
+learning techniques. The system is developed using classification algorithms, including Support 
+Vector Machine, Logistic regression, Artificial neural network, K-nearest neighbour, Naïve Bayes, 
+and Decision tree, while standard feature selection algorithms such as Relief, Minimal redundancy 
+maximal relevance, Least absolute shrinkage selection operator, and Local learning are used to remove 
+irrelevant and redundant features. We also propose a novel fast conditional mutual information feature 
+selection algorithm to solve the feature selection problem. The feature selection algorithms are used 
+to select features, increase classification accuracy, and reduce the execution time of the classification 
+system. Furthermore, the leave-one-subject-out cross-validation method has been used for learning 
+best practices in model assessment and for hyperparameter tuning. The performance metrics are used 
+to assess the performance of the classifiers. The performance of the classifiers has been evaluated on 
+the features selected by the feature selection algorithms. The experimental results show that the 
+proposed feature selection algorithm (FCMIM) is feasible with the Support Vector Machine classifier 
+for designing a high-level intelligent system to identify heart disease. The suggested diagnosis system 
+(FCMIM-SVM) achieved good accuracy compared to previously proposed methods. Additionally, the 
+proposed system can easily be implemented in healthcare for the identification of heart disease</div>
+    </div>
+    <h3>ML Model</h3>
+    <p>This application utilizes a Random Forest Classifier, an advanced ensemble machine learning algorithm that constructs multiple decision trees during training and outputs the majority class prediction.
+
+Random Forest is chosen for this clinical screener because it excels at handling complex, non-linear medical relationships among 13 distinct cardiac parameters. Its primary advantages include high predictive accuracy, robustness against overfitting, and the ability to seamlessly handle missing values. Crucially, it prevents individual tree bias, ensuring reliable risk intelligence when balancing subtle hemodynamic markers and severe ischemic warning signs.</p>
+     <h3>The Classification Report</h3>
+     <div class="container">
+    <h1>Model Evaluation Dashboard</h1>
+    <p class="subtitle">Detailed breakdown of machine learning classification performance on 61 test samples.</p>
+
+    <!-- Confusion Matrix Card -->
+    <div class="card">
+        <h2>Confusion Matrix</h2>
+        <p class="subtitle" style="font-size: 0.9rem; margin-bottom: 1rem;">Rows represent True Values, Columns represent Predicted Values.</p>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>True \ Predicted</th>
+                        <th>Predicted 0</th>
+                        <th>Predicted 1</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>True 0</strong></td>
+                        <td class="highlight">18 (True Negatives)</td>
+                        <td>10 (False Positives)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>True 1</strong></td>
+                        <td>3 (False Negatives)</td>
+                        <td class="highlight">30 (True Positives)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Classification Report Card -->
+    <div class="card">
+        <h2>Classification Report</h2>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1-Score</th>
+                        <th>Support</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>0</strong></td>
+                        <td>0.86</td>
+                        <td>0.64</td>
+                        <td>0.73</td>
+                        <td>28</td>
+                    </tr>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td>0.75</td>
+                        <td>0.91</td>
+                        <td>0.82</td>
+                        <td>33</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Accuracy</strong></td>
+                        <td colspan="2"></td>
+                        <td><strong>0.79</strong></td>
+                        <td>61</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Macro Avg</strong></td>
+                        <td>0.80</td>
+                        <td>0.78</td>
+                        <td>0.78</td>
+                        <td>61</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Weighted Avg</strong></td>
+                        <td>0.80</td>
+                        <td>0.79</td>
+                        <td>0.78</td>
+                        <td>61</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Explanation Card -->
+    <div class="card">
+        <h2>Plain-Language Explanation</h2>
+        <ul class="explanation-list">
+            <li><strong>Overall Accuracy (79%):</strong> Out of all 61 total test predictions made by the model, it predicted the correct outcome (either 0 or 1) 48 times (18 + 30).</li>
+            <li><strong>Positive Prediction Performance:</strong> The model has a precision of 0.86, meaning when it predicts class 0, it is correct 86% of the time. However, its recall is 0.64, meaning it only successfully caught 64% of all actual class 0 instances in the dataset (missing 10 cases that were incorrectly predicted as class 1).</li>
+            <li><strong>Negative Prediction Performance:</strong> The model achieves a high recall of 0.91 for class 1, meaning it successfully detected 91% of all actual positive cases (only missing 3 false negatives). Its precision is 0.75.</li>
+            <li><strong>F1-Score:</strong> A balanced metric combining precision and recall. Class 1 shows a stronger harmonic balance (0.82) compared to Class 0 (0.73), indicating the model leans slightly better at capturing Class 1 cases overall.</li>
+        </ul>
+    </div>
+
+</div>
+<h3>Parameters</h3>
+<!-- Parameter Intelligence & Feature Breakdown Section -->
+<div class="glass-card p-4 p-md-5 mb-5 bg-white rounded-4 shadow-sm">
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
+            <i class="fa-solid fa-microchip fa-xl"></i>
+        </div>
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Complete Feature & Parameter Guide</h3>
+            <p class="text-muted small mb-0">Detailed breakdown of the 13 clinical variables analyzed by the ML prediction model.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Parameter 1: Age -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">1. Age</span>
+                <h6 class="fw-bold text-dark">Patient Age (Years)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Chronological age of the patient.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Arterial stiffening and plaque accumulation naturally progress over time.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> Younger cohorts (&lt; 45 years) exhibit lower baseline vascular risk.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 2: Sex -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">2. Sex</span>
+                <h6 class="fw-bold text-dark">Biological Sex</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 1 = Male, 0 = Female.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Men generally face earlier onset risks; post-menopausal women experience sharp increases in cardiovascular vulnerability.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> Monitored relative to age and metabolic profile.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 3: Chest Pain Type (cp) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">3. cp</span>
+                <h6 class="fw-bold text-dark">Chest Pain Type (0–3)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 0: Typical Angina, 1: Atypical Angina, 2: Non-anginal Pain, 3: Asymptomatic.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Type 0 (Typical angina triggered by exertion and relieved by rest) strongly correlates with coronary blockage.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> Type 2 (Non-anginal) or Type 3 (Asymptomatic).</p>
+            </div>
+        </div>
+
+        <!-- Parameter 4: Resting Blood Pressure (trestbps) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">4. trestbps</span>
+                <h6 class="fw-bold text-dark">Resting Blood Pressure (mmHg)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Blood pressure upon hospital admission.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Chronic hypertension forces the heart to work harder, thickening the left ventricle and damaging arteries.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> &lt; 120 mmHg.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 5: Serum Cholesterol (chol) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">5. chol</span>
+                <h6 class="fw-bold text-dark">Serum Cholesterol (mg/dl)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Total circulating cholesterol levels in the blood.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> High LDL cholesterol promotes fatty plaque build-up inside coronary arteries (atherosclerosis).</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> &lt; 200 mg/dl.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 6: Fasting Blood Sugar (fbs) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">6. fbs</span>
+                <h6 class="fw-bold text-dark">Fasting Blood Sugar &gt; 120</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 1 = True (glucose &gt; 120 mg/dl), 0 = False.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> High blood sugar accelerates microvascular damage and increases systemic inflammation and heart attack risk.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0 (Normal fasting glucose).</p>
+            </div>
+        </div>
+
+        <!-- Parameter 7: Resting ECG (restecg) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">7. restecg</span>
+                <h6 class="fw-bold text-dark">Resting ECG Results (0–2)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 0: Normal, 1: ST-T Wave Abnormality, 2: Left Ventricular Hypertrophy.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Abnormal ST-T waves or ventricular enlargement indicate myocardial strain or past cardiac injury.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0: Normal electrical rhythm.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 8: Maximum Heart Rate (thalach) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">8. thalach</span>
+                <h6 class="fw-bold text-dark">Max Heart Rate Achieved (bpm)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Peak heart rate recorded during physical stress testing.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Unusually low maximum heart rate capacity can signal poor cardiovascular reserve or chronotropic incompetence.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> Higher age-adjusted peak heart rate capacity.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 9: Exercise Induced Angina (exang) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">9. exang</span>
+                <h6 class="fw-bold text-dark">Exercise Induced Angina</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 1 = Yes, 0 = No.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Experiencing chest pain specifically during physical exertion indicates oxygen deprivation in the heart muscle.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0 (No exercise-induced angina).</p>
+            </div>
+        </div>
+
+        <!-- Parameter 10: Oldpeak -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">10. oldpeak</span>
+                <h6 class="fw-bold text-dark">Oldpeak (ST Depression)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Magnitude of ST-segment depression induced by exercise relative to rest.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Higher depression values (e.g., &gt; 2.0) strongly correlate with severe myocardial ischemia.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0.0 (No ST depression).</p>
+            </div>
+        </div>
+
+        <!-- Parameter 11: Slope -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">11. slope</span>
+                <h6 class="fw-bold text-dark">Peak Exercise ST Slope (0–2)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 0: Upsloping, 1: Flat, 2: Downsloping.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Flat or downsloping ST segments during stress testing are key indicators of coronary artery disease.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0: Upsloping.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 12: Major Vessels (ca) -->
+        <div class="col-md-6 col-lg-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+                <span class="badge bg-primary mb-2">12. ca</span>
+                <h6 class="fw-bold text-dark">Major Vessels Colored (0–3)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> Number of major coronary vessels (0 to 3) colored/obstructed via fluoroscopy.</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> More blocked vessels drastically increase ischemic risk and likelihood of heart failure.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 0 Vessels blocked.</p>
+            </div>
+        </div>
+
+        <!-- Parameter 13: Thalassemia (thal) -->
+        <div class="col-md-12">
+            <div class="p-3 border rounded-3 bg-light">
+                <span class="badge bg-primary mb-2">13. thal</span>
+                <h6 class="fw-bold text-dark">Thalassemia Blood Flow Defect (3, 6, 7)</h6>
+                <p class="text-secondary small mb-2"><strong>Measures:</strong> 3: Normal blood flow, 6: Fixed Defect (permanent damage), 7: Reversible Defect (ischemia under stress).</p>
+                <p class="text-secondary small mb-2"><strong>Threat:</strong> Fixed or reversible perfusion defects highlight areas of the heart muscle vulnerable to infarction.</p>
+                <p class="text-success small fw-semibold mb-0"><strong>Healthy Baseline:</strong> 3: Normal perfusion.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<h3>Remainder</h3>
+<!-- Model Transparency & Medical Disclaimer Card -->
+<div class="glass-card p-4 mb-4 bg-white rounded-4 shadow-sm border-start border-warning border-4">
+    <div class="d-flex align-items-start gap-3">
+        <div class="text-warning fs-4 mt-1">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <h5 class="fw-bold text-dark mb-2">Important Medical Disclaimer & Project Notice</h5>
+            <p class="text-secondary small mb-2">
+                <strong>Please Note:</strong> This application is developed strictly as a <strong>machine learning portfolio project</strong> for educational and demonstration purposes. It should <strong>never</strong> be used as a substitute for professional medical diagnosis, advice, or treatment.
+            </p>
+            <p class="text-secondary small mb-0">
+                All predictions are generated by a supervised classification model trained on public clinical datasets (such as the UCI Cleveland Heart Disease dataset). Users should not blindly rely on these predictions for health decisions and must always consult a certified cardiologist or healthcare professional for clinical screenings.
+            </p>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

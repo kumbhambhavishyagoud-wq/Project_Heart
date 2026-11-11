@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}">
+<!-- Include Chart.js from CDN for rendering dynamic analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* Styling for analytics dashboard section */
+    .analytics-dashboard-container {
+        margin-top: 30px;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .chart-header-control {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .chart-select-dropdown {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        background-color: #f8fafc;
+        font-weight: 500;
+        color: #1e293b;
+        outline: none;
+        cursor: pointer;
+    }
+    .chart-canvas-wrapper {
+        position: relative;
+        height: 320px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="navigation-bar">
+        <a href="/" class="back-link">← System Dashboard</a>
+    </div>
+    
+    <div class="page-header">
+        <div class="live-indicator-container">
+            <span class="pulse-dot"></span>
+            <span class="live-text">CORE PREDICTIVE ENGINE ONLINE</span>
+        </div>
+        <h2>Hospital Data Analysis Portal</h2>
+        <p class="subtitle">Upload patient batch telemetry files for automated cardiac risk screening.</p>
+    </div>
+
+    <!-- Required Data Labels Guidance Banner -->
+    <div class="guidance-banner">
+        <h4><span class="banner-icon">⚡</span> MANDATORY DATA MATRIX SCHEMA (CASE-SENSITIVE)</h4>
+        <p>To prevent ingestion failure, your uploaded CSV file must strictly match these exact feature mappings:</p>
+        <div class="labels-grid">
+            <span><code>age</code></span>
+            <span><code>sex</code></span>
+            <span><code>cp</code></span>
+            <span><code>trestbps</code></span>
+            <span><code>chol</code></span>
+            <span><code>fbs</code></span>
+            <span><code>restecg</code></span>
+            <span><code>thalach</code></span>
+            <span><code>exang</code></span>
+            <span><code>oldpeak</code></span>
+            <span><code>slope</code></span>
+            <span><code>ca</code></span>
+            <span><code>thal</code></span>
+        </div>
+    </div>
+    
+    <div class="card form-card">
+        <form id="uploadForm">
+            <div class="file-upload-wrapper">
+                <input type="file" accept=".csv, text/csv, application/vnd.ms-excel" id="data" name="csv_file" class="hidden-input" required>
+                <label for="data" class="dropzone-label">
+                    <div class="icon-wrapper">
+                        <span class="dropzone-icon">🚨</span>
+                    </div>
+                    <span class="dropzone-text">INITIALIZE DATA INGESTION</span>
+                    <span class="file-restriction">Drop CSV file here or click to mount local file system</span>
+                </label>
+            </div>
+            
+            <div id="fileSelectedName" class="file-status-text"></div>
+            
+            <div class="action-buttons-group">
+                <button type="submit" class="btn-primary">START INFERENCE PIPELINE</button>
+                <button type="button" id="resetBtn" class="btn-secondary">RESET INPUT MATRIX</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Section to show summary stats dynamically -->
+    <div id="summaryResults" class="results-card" style="display: none;">
+        <h3>PIPELINE INFERENCE METRICS</h3>
+        <div class="metrics-grid">
+            <div class="metric-box healthy">
+                <span class="metric-title">Negative Risk (Stable)</span>
+                <span id="healthyCount" class="metric-value">0</span>
+                <span class="metric-label">SYSTEM ASSIGNED CLASS 1 (NEGATIVE)</span>
+            </div>
+            <div class="metric-box diseased">
+                <span class="metric-title">Cardiac Pathology Detected</span>
+                <span id="diseasedCount" class="metric-value">0</span>
+                <span class="metric-label">SYSTEM ASSIGNED CLASS 0 (POSITIVE)</span>
+            </div>
+        </div>
+
+        <!-- Dynamic Analytics Dashboard with Dropdown Selector -->
+        <div class="analytics-dashboard-container">
+            <div class="chart-header-control">
+                <h4 style="margin: 0; color: #1e293b; font-size: 1.1rem;">📊 Telemetry Visualizer & Analytics</h4>
+                <select id="chartSelector" class="chart-select-dropdown">
+                    <option value="riskDistribution">Donut Chart: Risk Distribution</option>
+                    <option value="ageGroupBreakdown">Bar Chart: Risk by Age Cohort</option>
+                    <option value="cholesterolHeartRate">Scatter Plot: Cholesterol vs. Max Heart Rate</option>
+                </select>
+            </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="analysisChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="download-container" style="margin-top: 25px; text-align: center;">
+            <button type="button" id="downloadCsvBtn" class="btn-primary" style="background-color: #28a745;">DOWNLOAD PREDICTED CSV MATRIX</button>
+        </div>
+
+        <div class="download-notice" style="margin-top: 15px;">
+            <span class="notice-icon">💾</span>
+            <p><strong>EXECUTION COMPLETE:</strong> Click the button above to export the modified telemetry matrix containing prediction labels and class probabilities.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const currentUsername = "{{ current_user.username if current_user.is_authenticated else 'user' }}";
+
+    const fileInput = document.getElementById('data');
+    const statusDiv = document.getElementById('fileSelectedName');
+    const uploadForm = document.getElementById('uploadForm');
+    const summaryResults = document.getElementById('summaryResults');
+    const resetBtn = document.getElementById('resetBtn');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const chartSelector = document.getElementById('chartSelector');
+
+    let generatedCsvString = "";
+    let activeChartInstance = null;
+    let parsedRowsData = [];
+
+    const MANDATORY_LABELS = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal'];
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            statusDiv.innerHTML = `MOUNTED MATRIX: <strong>${file.name}</strong> (${(file.size / 1024).toFixed(2)} KB)`;
+            statusDiv.classList.add('active');
+        } else {
+            clearFormState();
+        }
+    });
+
+    // Unified comprehensive state flush & UI reset engine
+    function clearFormState() {
+        uploadForm.reset();
+        fileInput.value = "";
+        statusDiv.innerHTML = "";
+        statusDiv.classList.remove('active');
+        summaryResults.style.display = 'none';
+        generatedCsvString = "";
+        parsedRowsData = [];
+        
+        // Completely destroy active Chart.js instance and wipe canvas context
+        if (activeChartInstance) {
+            activeChartInstance.destroy();
+            activeChartInstance = null;
+        }
+    }
+
+    resetBtn.addEventListener('click', clearFormState);
+
+    // Handle manual CSV download and automatically clean/reset the page interface back to normal
+    downloadCsvBtn.addEventListener('click', function() {
+        if (!generatedCsvString) return;
+        
+        const safeUsername = currentUsername.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const blob = new Blob([generatedCsvString], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeUsername}_prediction_matrix.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+
+        // Reset page back to normal immediately after file download is triggered
+        clearFormState();
+    });
+
+    function parseCsvToObjects(csvText) {
+        const lines = csvText.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().replace(/[\r\n]+/g, ""));
+        
+        const results = [];
+        for (let i = 1; i < lines.length; i++) {
+            const currentLine = lines[i].trim();
+            if (!currentLine) continue;
+            const currentVal = currentLine.split(',');
+            let obj = {};
+            headers.forEach((header, index) => {
+                obj[header] = currentVal[index] !== undefined ? currentVal[index].trim() : "";
+            });
+            results.push(obj);
+        }
+        return results;
+    }
+
+    function renderSelectedChart(chartType) {
+        const ctx = document.getElementById('analysisChart').getContext('2d');
+        if (activeChartInstance) {
+            activeChartInstance.destroy();
+        }
+
+        if (chartType === 'riskDistribution') {
+            const healthy = parseInt(document.getElementById('healthyCount').innerText) || 0;
+            const diseased = parseInt(document.getElementById('diseasedCount').innerText) || 0;
+
+            activeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Negative Risk (Stable)', 'Cardiac Pathology Detected'],
+                    datasets: [{
+                        data: [healthy, diseased],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        } 
+        else if (chartType === 'ageGroupBreakdown') {
+            let cohorts = { 'Under 40': 0, '40-50': 0, '51-60': 0, '60+': 0 };
+            parsedRowsData.forEach(row => {
+                let age = parseFloat(row.age);
+                if (!isNaN(age)) {
+                    if (age < 40) cohorts['Under 40']++;
+                    else if (age <= 50) cohorts['40-50']++;
+                    else if (age <= 60) cohorts['51-60']++;
+                    else cohorts['60+']++;
+                }
+            });
+
+            activeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(cohorts),
+                    datasets: [{
+                        label: 'Patient Count by Age Group',
+                        data: Object.values(cohorts),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } 
+        else if (chartType === 'cholesterolHeartRate') {
+            let scatterData = parsedRowsData.map(row => ({
+                x: parseFloat(row.chol),
+                y: parseFloat(row.thalach)
+            })).filter(pt => !isNaN(pt.x) && !isNaN(pt.y));
+
+            activeChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Cholesterol (mg/dl) vs Max Heart Rate',
+                        data: scatterData,
+                        backgroundColor: '#8b5cf6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Serum Cholesterol (chol)' } },
+                        y: { title: { display: true, text: 'Max Heart Rate (thalach)' } }
+                    }
+                }
+            });
+        }
+    }
+
+    chartSelector.addEventListener('change', function(e) {
+        renderSelectedChart(e.target.value);
+    });
+
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (fileInput.files.length === 0) {
+            alert("CRITICAL ERROR:\n\nNo data packet mounted inside the file system context.");
+            return;
+        }
+
+        const selectedFile = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async function(event) {
+            const csvContent = event.target.result;
+            const rows = csvContent.split('\n');
+            const firstLine = rows.length > 0 ? rows[0] : "";
+            
+            const uploadedHeaders = firstLine.split(',').map(header => header.trim().replace(/[\r\n]+/g, ""));
+            const missingFields = MANDATORY_LABELS.filter(field => !uploadedHeaders.includes(field));
+
+            if (missingFields.length > 0) {
+                alert(`CRITICAL VALIDATION ERROR:\n\nYour uploaded dataset structure is invalid.\n\nMISSING FIELD(S): [ ${missingFields.join(', ')} ]\n\nPlease ensure your CSV file contains these mandatory labels before running analysis.`);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('csv_file', selectedFile);
+
+            try {
+                const submitBtn = document.querySelector('.btn-primary');
+                submitBtn.innerHTML = "<span class='spinner'></span> COMPUTING TENSOR GRAPH...";
+                submitBtn.disabled = true;
+                submitBtn.classList.add('processing');
+
+                const response = await fetch('/hospital', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                submitBtn.innerHTML = "START INFERENCE PIPELINE";
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('processing');
+
+                if (response.ok) {
+                    document.getElementById('healthyCount').innerText = result.healthy_count;
+                    document.getElementById('diseasedCount').innerText = result.diseased_count;
+                    
+                    generatedCsvString = result.csv_data;
+                    parsedRowsData = parseCsvToObjects(result.csv_data);
+                    
+                    summaryResults.style.display = 'block';
+                    summaryResults.scrollIntoView({ behavior: 'smooth' });
+
+                    chartSelector.value = "riskDistribution";
+                    renderSelectedChart("riskDistribution");
+                } else {
+                    alert("PIPELINE PROCESSING ERROR:\n\n" + (result.error || "Execution anomaly encountered. Check backend logs."));
+                }
+            } catch (err) {
+                alert("NETWORK INFRASTRUCTURE ERROR:\n\nCould not secure communication pipeline to backend controller: " + err.message);
+            }
+        };
+
+        reader.readAsText(selectedFile);
+    });
+</script>
+{% endblock %}

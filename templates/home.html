@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}">
+{% endblock %}
+
+{% block body %}
+<main class="container py-5">
+    <div>
+        <div class="navigation">
+            <a href="/about">About</a>
+            <a href="/">Home</a>
+            <a href="/hospital">Hospital</a>
+            <a href="/detect">Detect</a>
+            {% if current_user.is_authenticated %}
+    <a>{{ current_user.username | capitalize }}</a>
+    <form action="/logout" method="post">
+        <button type="submit">Log Out</button>
+    </form>
+    <a href="{{ url_for('history') }}" class="history-link">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    Prediction History
+</a>
+{% else %}
+    <a href="/login">Login/Sign In</a>
+{% endif %}
+        </div>
+        
+    </div>
+    <header class="text-center mb-5">
+        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle p-3 mb-3 shadow-sm" style="width: 64px; height: 64px;">
+            <i class="fa-solid fa-heart-pulse fa-2x" aria-hidden="true"></i>
+        </div>
+        <h1 class="fw-bold mb-2">Heart Disease Detection Using ML</h1>
+        <p class="text-secondary lead">Advanced Risk Intelligence &amp; Diagnostic Screener</p>
+        <div class="mt-4">
+            <a href="/detect" class="btn btn-primary btn-lg px-5 py-3 fw-semibold shadow">
+                <i class="fa-solid fa-microchip me-2" aria-hidden="true"></i>
+                Get Your Predictions Now
+            </a>
+        </div>
+    </header>
+
+    <section class="row g-4 justify-content-center mb-5" aria-label="Heart health screening highlights">
+        <div class="col-md-6">
+            <article class="glass-card h-100 text-center">
+                <figure class="mb-0">
+                    <div class="image-frame">
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Heart_diagram-en.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original"
+                            alt="Medical imaging used in cardiovascular care"
+                            loading="lazy"
+                            decoding="async">
+                    </div>
+                    <figcaption class="fw-semibold mt-3">
+                        Advanced electro-diagnostic and imaging scans
+                    </figcaption>
+                </figure>
+                <p class="text-secondary small mt-2 mb-0">
+                    High-resolution predictive imaging supports early screening for silent vessel anomalies.
+                </p>
+            </article>
+        </div>
+
+        
+    </section>
+
+    <section class="glass-card mb-5">
+        <h2 class="fw-bold mb-3">
+            <i class="fa-solid fa-triangle-exclamation text-danger me-2" aria-hidden="true"></i>
+            The Global Threat of Cardiovascular Disease (CVD)
+        </h2>
+        <p class="text-secondary">
+            According to the World Health Organization (WHO), cardiovascular diseases remain the
+            <strong>leading cause of death globally</strong>, taking an estimated 19.8 million lives
+            annually (roughly 32% of all global deaths). Over 85% of these fatalities are attributed
+            directly to heart attacks and strokes.
+        </p>
+        <p class="text-secondary mb-0">
+            Because early stages of vascular disease often present zero physical symptoms, machine
+            learning screening tools analyze subtle electrophysiological, hemodynamic, and biochemical
+            warning signals before acute clinical events happen.
+        </p>
+    </section>
+
+    <section class="glass-card mb-5">
+        <h2 class="fw-bold mb-3">
+            <i class="fa-solid fa-heart-circle-bolt text-primary me-2" aria-hidden="true"></i>
+            Inner Heart Anatomy &amp; Critical Disease Zones
+        </h2>
+        <p class="text-secondary mb-4">
+            Understanding how internal structural health ties directly into our machine learning model parameters:
+        </p>
+
+        <div class="row g-4 align-items-center mb-4">
+            <div class="col-lg-5 text-center">
+                <figure class="mb-0">
+                    <div class="image-frame">
+                        <img
+                            src="https://images.unsplash.com/photo-1530497610245-94d3c16cda28?q=80&amp;w=1000&amp;auto=format&amp;fit=crop"
+                            alt="Medical scan illustrating internal anatomy"
+                            loading="lazy"
+                            decoding="async">
+                    </div>
+                    <figcaption class="text-secondary small mt-2">
+                        Inner cardiac anatomy and coronary vessels
+                    </figcaption>
+                </figure>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="d-flex flex-column gap-3">
+                    <article class="p-3 border rounded-3 bg-light">
+                        <h3 class="h6 fw-bold mb-1">
+                            <i class="fa-solid fa-circle-dot text-danger me-2" aria-hidden="true"></i>
+                            Coronary Arteries &amp; Major Vessels (ca)
+                        </h3>
+                        <p class="text-secondary small mb-0">
+                            Supply oxygenated blood to the heart muscle. Blockages or staining detected via
+                            fluoroscopy directly increase model risk coefficients.
+                        </p>
+                    </article>
+
+                    <article class="p-3 border rounded-3 bg-light">
+                        <h3 class="h6 fw-bold mb-1">
+                            <i class="fa-solid fa-circle-dot text-warning me-2" aria-hidden="true"></i>
+                            Left Ventricle &amp; Muscle Wall (restecg / oldpeak)
+                        </h3>
+                        <p class="text-secondary small mb-0">
+                            Pumps blood to the body. Hypertrophy or ST-segment depression signals abnormal
+                            workload and potential ischemic damage.
+                        </p>
+                    </article>
+
+                    <article class="p-3 border rounded-3 bg-light">
+                        <h3 class="h6 fw-bold mb-1">
+                            <i class="fa-solid fa-circle-dot text-success me-2" aria-hidden="true"></i>
+                            Myocardial Blood Flow (thal)
+                        </h3>
+                        <p class="text-secondary small mb-0">
+                            Thallium scans measure tissue perfusion; fixed or reversible perfusion defects
+                            highlight areas vulnerable to myocardial infarction.
+                        </p>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="glass-card mb-5">
+        <h2 class="fw-bold mb-4">
+            <i class="fa-solid fa-list-check text-primary me-2" aria-hidden="true"></i>
+            Understanding the ML Screener Parameters &amp; Healthy Baselines
+        </h2>
+        <p class="text-secondary mb-4">
+            Our model evaluates 13 key clinical features derived from standard UCI/Cleveland diagnostic
+            guidelines. Below is an explanation of what each parameter measures, the threat profile of
+            abnormal levels, and typical healthy target metrics:
+        </p>
+
+        <div class="custom-accordion">
+            <details class="accordion-panel mb-3 border rounded-3 overflow-hidden shadow-sm" open>
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>1. Age &amp; Sex (Demographics)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Patient age in years and biological sex (1 = Male, 0 = Female).</p>
+                    <p><strong>Threat profile:</strong> Cardiovascular vulnerability naturally accumulates over time due to arterial stiffening. Post-menopausal women and men over 45 face significantly elevated relative risks.</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Younger cohorts (&lt; 45 years) exhibit baseline arterial elasticity, though risk is managed through overall metabolic health regardless of age.</p>
+                </div>
+            </details>
+
+            <details class="accordion-panel mb-3 border rounded-3 overflow-hidden shadow-sm">
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>2. Chest Pain Type (cp)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Categorized chest discomfort types: 0 (Typical Angina), 1 (Atypical Angina), 2 (Non-anginal Pain), and 3 (Asymptomatic).</p>
+                    <p><strong>Threat profile:</strong> Typical angina (exertional chest discomfort relieved by rest) strongly correlates with coronary artery obstruction and myocardial ischemia.</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Value 2 (Non-anginal pain or completely asymptomatic presentation with no cardiac restriction).</p>
+                </div>
+            </details>
+
+            <details class="accordion-panel mb-3 border rounded-3 overflow-hidden shadow-sm">
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>3. Resting Blood Pressure (trestbps) &amp; Cholesterol (chol)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Resting blood pressure upon hospital admission in mm Hg and serum cholesterol in mg/dl.</p>
+                    <p><strong>Threat profile:</strong> Chronic hypertension forces the heart muscle to work harder, thickening ventricles. High LDL cholesterol contributes directly to plaque build-up (atherosclerosis).</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Resting BP &lt; 120 mmHg; Serum Cholesterol &lt; 200 mg/dl.</p>
+                </div>
+            </details>
+
+            <details class="accordion-panel mb-3 border rounded-3 overflow-hidden shadow-sm">
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>4. Fasting Blood Sugar (fbs)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Evaluates if fasting blood sugar is greater than 120 mg/dl (1 = True, 0 = False).</p>
+                    <p><strong>Threat profile:</strong> Elevated blood sugar damages blood vessels and accelerates microvascular and macrovascular complications, heavily increasing heart attack susceptibility.</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Value 0 (Fasting plasma glucose normal / under 100-120 mg/dl).</p>
+                </div>
+            </details>
+
+            <details class="accordion-panel mb-3 border rounded-3 overflow-hidden shadow-sm">
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>5. Resting ECG &amp; Maximum Heart Rate (restecg &amp; thalach)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Electrical heart rhythm at rest (0: Normal, 1: ST-T wave abnormality, 2: Left Ventricular Hypertrophy) and peak heart rate achieved during stress testing.</p>
+                    <p><strong>Threat profile:</strong> ST-T wave irregularities indicate myocardial strain or current ischemic injury. Subpar peak heart rates reflect poor cardiac reserve.</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Value 0 for restecg (Normal rhythm); higher peak heart rate capacity scaled to age during exertion.</p>
+                </div>
+            </details>
+
+            <details class="accordion-panel border rounded-3 overflow-hidden shadow-sm">
+                <summary class="p-3 fw-semibold bg-light cursor-pointer text-dark d-flex justify-content-between align-items-center">
+                    <span>6. Exercise Angina, Oldpeak, Slope, Vessels (ca), &amp; Thalassemia (thal)</span>
+                    <i class="fa-solid fa-chevron-down small text-muted" aria-hidden="true"></i>
+                </summary>
+                <div class="p-3 text-secondary small bg-white border-top">
+                    <p><strong>What it measures:</strong> Advanced clinical stress markers including exercise-induced chest pain, ST depression magnitude (oldpeak), fluoroscopy major vessel staining (0-3), and thallium scan blood perfusion defects.</p>
+                    <p><strong>Threat profile:</strong> Multiple colored obstructed vessels (ca &gt; 0) or fixed/reversible thallium perfusion defects (thal = 6 or 7) signify physical coronary blockages requiring urgent clinical evaluation.</p>
+                    <p class="mb-0 text-success fw-semibold"><strong>Healthy Baseline Reference:</strong> Exang = 0 (No induced angina), Oldpeak = 0.0, ca = 0 vessels blocked, thal = 3 (Normal blood flow).</p>
+                </div>
+            </details>
+        </div>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}">
+<style>
+    /* Styling for the error banner */
+    .error-banner {
+        background-color: #f8d7da;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .error-banner button.btn-close-alert {
+        background: none;
+        border: none;
+        color: #842029;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .error-banner button.btn-close-alert:hover {
+        opacity: 0.75;
+    }
+
+    /* Styling for password container to align the toggle button cleanly */
+    .password-container {
+        display: flex;
+        align-items: center;
+        position: relative;
+        margin-bottom: 5px;
+    }
+
+    .password-container input {
+        width: 100%;
+        padding-right: 45px; /* Leave space for the toggle text */
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: #6c757d;
+        padding: 4px;
+    }
+
+    .toggle-password:hover {
+        color: #000;
+    }
+
+    /* Client-side dynamic error text styling */
+    .client-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: -10px;
+        margin-bottom: 10px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<a href="{{ url_for('home') }}">Back</a>
+
+{% if error %}
+<div id="auto-dismiss-error" class="error-banner">
+    <div>
+        <strong>Error:</strong> <span class="ms-1">{{ message }}</span>
+    </div>
+    <button type="button" class="btn-close-alert" aria-label="Close" onclick="dismissAlert('auto-dismiss-error')">&times;</button>
+</div>
+{% endif %}
+
+<!-- Dynamic client error message container -->
+<div id="client-error-banner" class="error-banner" style="display: none;">
+    <div>
+        <strong>Validation Error:</strong> <span id="client-error-message" class="ms-1"></span>
+    </div>
+    <button type="button" class="btn-close-alert" aria-label="Close" onclick="dismissAlert('client-error-banner')">&times;</button>
+</div>
+
+<div>
+    <form id="signinForm" method="POST" action="{{ url_for('signin') }}" onsubmit="return validateForm(event)">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="password">Password:</label>
+        <div class="password-container">
+            <!-- Added minlength and pattern hints for browser support -->
+            <input type="password" id="password" name="password" minlength="7" maxlength="7" required>
+            <button type="button" id="togglePasswordBtn" class="toggle-password" onclick="togglePasswordVisibility()">Show</button>
+        </div>
+        <small style="color: #6c757d; display: block; margin-bottom: 10px;">Must be at least 7 characters long and contain both letters and numbers.</small>
+
+        <button type="submit">Sign In</button>
+    </form>
+
+    <p>Or <a href="{{ url_for('login') }}">Log In</a></p>
+</div>
+
+<script>
+    // Toggle Password Visibility Function
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('togglePasswordBtn');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.textContent = 'Hide';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.textContent = 'Show';
+        }
+    }
+
+    // Helper function to smoothly fade out and remove alert boxes
+    function dismissAlert(alertId) {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            alertElement.style.opacity = "0";
+            alertElement.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                alertElement.style.display = "none";
+                alertElement.style.opacity = "1";
+                alertElement.style.transform = "translateY(0)";
+            }, 600);
+        }
+    }
+
+    // Form validation script with Regex
+    function validateForm(event) {
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        const errorBanner = document.getElementById('client-error-banner');
+        const errorMessage = document.getElementById('client-error-message');
+
+        // 1. Name Regex: Only letters, spaces, and hyphens allowed, at least 2 chars long
+        const nameRegex = /^[a-zA-Z\s\-]{2,}$/;
+        if (!nameRegex.test(name)) {
+            showError("Please enter a valid name (letters and spaces only, minimum 2 characters).");
+            event.preventDefault();
+            return false;
+        }
+
+        // 2. Standard Email Regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showError("Please enter a valid email address.");
+            event.preventDefault();
+            return false;
+        }
+
+        // 3. Password Regex: Minimum 7 chars, at least one letter and one number
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{7,}$/;
+        if (!passwordRegex.test(password)) {
+            showError("Password must be at least 7 characters long and contain both letters and numbers.");
+            event.preventDefault();
+            return false;
+        }
+
+        return true; // Form submits if all validations pass
+    }
+
+    function showError(message) {
+        const errorBanner = document.getElementById('client-error-banner');
+        const errorMessage = document.getElementById('client-error-message');
+        errorMessage.textContent = message;
+        errorBanner.style.display = "flex";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Auto-dismiss backend error alert box after 60 seconds (1 minute)
+    document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(function() {
+            dismissAlert("auto-dismiss-error");
+        }, 60000);
+    });
+</script>
+{% endblock %}

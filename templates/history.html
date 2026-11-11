@@ -1,0 +1,1573 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}">
+<style>
+.history-layout {
+    display:flex;
+    min-height:100vh;
+    background:var(--bg-color,#f8fafc);
+}
+.history-sidebar {
+    width:320px;
+    flex:0 0 320px;
+    height:100vh;
+    position:sticky;
+    top:0;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    padding:2rem 1.5rem;
+    background:#fff;
+    border-right:1px solid #e2e8f0;
+}
+.history-sidebar .back-link {
+    color:#64748b;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:600;
+}
+.history-sidebar .back-link:hover {color:#059669}
+.history-brand {
+    font-size:19px;
+    font-weight:800;
+    color:#183b45;
+    margin:0;
+}
+.history-subtitle {
+    font-size:12px;
+    color:#87949a;
+    line-height:1.6;
+    margin:5px 0 0;
+}
+.history-user {
+    display:flex;
+    align-items:center;
+    gap:11px;
+}
+.history-avatar {
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    background:#e5f7ef;
+    color:#059669;
+    font-weight:800;
+}
+.history-user strong {
+    display:block;
+    color:#183b45;
+    font-size:13px;
+}
+.history-user small {
+    color:#87949a;
+    font-size:11px;
+}
+.history-side-title {
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#94a3b8;
+    font-weight:800;
+    margin:0 0 7px;
+}
+.history-list {
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+}
+.history-nav-item {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:11px 10px;
+    border-radius:11px;
+    text-decoration:none!important;
+    border:1px solid transparent;
+    transition:.2s;
+}
+.history-nav-item:hover {background:#f3faf7}
+.history-nav-item.active {
+    background:#eaf8f1;
+    border-color:#ccebdd;
+}
+.history-nav-icon {
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    flex:0 0 34px;
+    border-radius:10px;
+    background:#f1f5f9;
+    color:#64748b;
+}
+.history-nav-item.active .history-nav-icon {
+    background:#d7f2e4;
+    color:#07845e;
+}
+.history-nav-copy {
+    min-width:0;
+    flex:1;
+}
+.history-nav-copy strong {
+    display:block;
+    font-size:12px;
+    color:#334155;
+}
+.history-nav-copy small {
+    display:block;
+    font-size:10px;
+    color:#94a3b8;
+    margin-top:3px;
+}
+.history-nav-arrow {
+    font-size:10px;
+    color:#94a3b8;
+}
+.history-empty-side {
+    text-align:center;
+    padding:20px 8px;
+    color:#94a3b8;
+    font-size:12px;
+}
+.history-empty-side i {
+    font-size:22px;
+    display:block;
+    margin-bottom:8px;
+}
+.history-new-btn {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    padding:12px;
+    border-radius:10px;
+    background:linear-gradient(135deg,#059669,#0d9488);
+    color:#fff!important;
+    text-decoration:none!important;
+    font-size:13px;
+    font-weight:700;
+    transition:.2s;
+}
+.history-new-btn:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 18px rgba(5,150,105,.18);
+}
+.history-side-footer {
+    margin-top:auto;
+    padding-top:14px;
+    border-top:1px solid #edf1f3;
+    color:#87949a;
+    font-size:11px;
+    line-height:1.6;
+}
+.history-main {
+    min-width:0;
+    flex:1;
+    padding:30px 34px;
+    max-width:1500px;
+    margin:0 auto;
+    width:100%;
+}
+.history-topbar {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:22px;
+}
+.history-eyebrow {
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#059669;
+    margin-bottom:7px;
+}
+.history-page-title {
+    font-size:27px;
+    font-weight:800;
+    letter-spacing:-.5px;
+    color:#183b45;
+    margin:0;
+}
+.history-page-desc {
+    font-size:13px;
+    color:#84939a;
+    margin:7px 0 0;
+    line-height:1.7;
+}
+.history-action-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:11px 15px;
+    border-radius:10px;
+    border:1px solid #d8e7e1;
+    background:#fff;
+    color:#176b55;
+    font-size:12px;
+    font-weight:700;
+    text-decoration:none;
+    transition:.2s;
+    white-space:nowrap;
+}
+.history-action-btn:hover {
+    background:#effaf5;
+    color:#087653;
+    transform:translateY(-1px);
+}
+.history-card {
+    background:#fff;
+    border:1px solid #e5ecef;
+    border-radius:17px;
+    box-shadow:0 5px 20px rgba(15,40,35,.035);
+    margin-bottom:17px;
+    overflow:hidden;
+}
+.history-card-head {
+    padding:18px 21px;
+    border-bottom:1px solid #edf1f3;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+.history-card-head h2 {
+    font-size:14px;
+    font-weight:800;
+    color:#183b45;
+    margin:0;
+}
+.history-card-body {padding:20px 21px}
+.history-empty-main {
+    padding:60px 20px;
+    text-align:center;
+}
+.empty-icon {
+    width:62px;
+    height:62px;
+    border-radius:18px;
+    background:#eaf8f1;
+    color:#059669;
+    display:grid;
+    place-items:center;
+    font-size:25px;
+    margin:0 auto 16px;
+}
+.history-empty-main h3 {
+    font-size:18px;
+    font-weight:800;
+    color:#183b45;
+}
+.history-empty-main p {
+    max-width:430px;
+    margin:7px auto 18px;
+    color:#84939a;
+    font-size:13px;
+    line-height:1.7;
+}
+.history-summary-grid {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:13px;
+}
+.history-stat {
+    padding:15px;
+    border:1px solid #e8eff0;
+    background:#fbfdfc;
+    border-radius:12px;
+    min-width:0;
+}
+.history-stat-label {
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:#8a999d;
+    font-weight:800;
+}
+.history-stat-value {
+    font-size:21px;
+    font-weight:800;
+    color:#183b45;
+    margin-top:7px;
+    overflow-wrap:anywhere;
+}
+.history-stat-note {
+    font-size:10px;
+    color:#94a3b8;
+    margin-top:3px;
+}
+.risk-pill {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border-radius:30px;
+    padding:6px 10px;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.04em;
+}
+.risk-low {background:#e8f8ef;color:#08794f}
+.risk-moderate {background:#fff6e6;color:#a56808}
+.risk-high {background:#fff0f0;color:#bd3544}
+.probability-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    font-size:12px;
+    color:#52636b;
+    margin:14px 0 7px;
+}
+.probability-track {
+    height:9px;
+    background:#edf2f3;
+    border-radius:20px;
+    overflow:hidden;
+}
+.probability-fill {
+    height:100%;
+    border-radius:20px;
+}
+.fill-disease {background:linear-gradient(90deg,#f59e0b,#dc3545)}
+.fill-healthy {background:linear-gradient(90deg,#34d399,#059669)}
+.history-section-title {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:13px;
+    font-weight:800;
+    color:#183b45;
+    margin:0 0 14px;
+}
+.history-section-title i {color:#059b7b}
+.history-data-grid {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+}
+.history-data-item {
+    padding:11px 12px;
+    background:#f8fbfa;
+    border:1px solid #eaf0ee;
+    border-radius:10px;
+    min-width:0;
+}
+.history-data-item small {
+    display:block;
+    color:#8a999d;
+    font-size:10px;
+    margin-bottom:5px;
+}
+.history-data-item strong {
+    display:block;
+    color:#40545b;
+    font-size:12px;
+    overflow-wrap:anywhere;
+}
+.history-analysis {
+    font-size:13px;
+    line-height:1.9;
+    color:#40545b;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    margin:0;
+}
+.history-analysis-block {
+    padding:16px;
+    background:#f8fbfa;
+    border:1px solid #e8f0ed;
+    border-radius:12px;
+}
+.history-analysis-block h4 {
+    font-size:12px;
+    font-weight:800;
+    color:#08794f;
+    margin:0 0 8px;
+}
+.history-tips {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+}
+.history-tip {
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    padding:12px;
+    background:#f3f9f7;
+    border:1px solid #e0efea;
+    border-radius:10px;
+    color:#40565a;
+    font-size:12px;
+    line-height:1.7;
+}
+.history-tip i {
+    color:#159b83;
+    margin-top:3px;
+    flex-shrink:0;
+}
+.history-disclaimer {
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    padding:13px 15px;
+    border-radius:11px;
+    background:#fff8ed;
+    border:1px solid #f3dfbd;
+    color:#805b25;
+    font-size:11px;
+    line-height:1.65;
+}
+.history-table-wrap {overflow-x:auto}
+.history-table {
+    width:100%;
+    border-collapse:collapse;
+    min-width:560px;
+}
+.history-table th {
+    text-align:left;
+    padding:11px 12px;
+    background:#f7faf9;
+    color:#87949a;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+}
+.history-table td {
+    padding:12px;
+    border-top:1px solid #edf1f3;
+    color:#52636b;
+    font-size:12px;
+}
+.history-table td strong {color:#334155}
+.history-download {border:0;cursor:pointer}
+.history-download:disabled {opacity:.65;cursor:wait}
+
+@media(max-width:1000px) {
+    .history-sidebar {
+        width:275px;
+        flex-basis:275px;
+        padding:22px 17px;
+    }
+    .history-data-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px) {
+    .history-layout {display:block}
+    .history-sidebar {
+        position:relative;
+        width:100%;
+        height:auto;
+        max-height:none;
+        border-right:0;
+        border-bottom:1px solid #e2e8f0;
+        padding:18px;
+    }
+    .history-list {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .history-main {padding:20px 14px}
+    .history-topbar {flex-direction:column}
+    .history-summary-grid {grid-template-columns:1fr}
+    .history-data-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+    .history-tips {grid-template-columns:1fr}
+}
+@media(max-width:430px) {
+    .history-list {grid-template-columns:1fr}
+    .history-data-grid {grid-template-columns:1fr}
+    .history-card-head,.history-card-body {padding:15px}
+}
+@media print {
+    .history-sidebar,
+    .history-topbar .history-action-btn,
+    .history-download,
+    .history-list-card {display:none!important}
+    .history-layout {display:block;background:#fff}
+    .history-main {padding:0;max-width:none}
+    .history-card {box-shadow:none;break-inside:avoid}
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="history-layout">
+
+    <aside class="history-sidebar">
+
+        <div>
+            <a href="/" class="back-link">
+                <i class="fa-solid fa-arrow-left me-2"></i>
+                Back to Dashboard
+            </a>
+
+            <div class="mt-4">
+                <h1 class="history-brand">Prediction Hub</h1>
+                <p class="history-subtitle">
+                    Your saved heart-health screening reports.
+                </p>
+            </div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="history-user">
+            <div class="history-avatar">
+                {{ (current_user.username or 'U')[0]|upper }}
+            </div>
+            <div>
+                <strong>{{ current_user.username|capitalize }}</strong>
+                <small>Personal workspace</small>
+            </div>
+        </div>
+        {% endif %}
+
+        <div>
+            <p class="history-side-title">Saved predictions</p>
+
+            <nav class="history-list">
+                {% for record in history_records %}
+
+                {% set p = record.disease_probability|float %}
+
+                {% if p >= 60 %}
+                    {% set risk_name = 'Higher model estimate' %}
+                    {% set risk_icon = 'fa-triangle-exclamation' %}
+                {% elif p >= 40 %}
+                    {% set risk_name = 'Moderate model estimate' %}
+                    {% set risk_icon = 'fa-chart-line' %}
+                {% else %}
+                    {% set risk_name = 'Lower model estimate' %}
+                    {% set risk_icon = 'fa-heart-circle-check' %}
+                {% endif %}
+
+                <a class="history-nav-item {% if selected_record and selected_record.id == record.id %}active{% endif %}"
+                   href="{{ url_for('history', history_id=record.id) }}">
+
+                    <span class="history-nav-icon">
+                        <i class="fa-solid {{ risk_icon }}"></i>
+                    </span>
+
+                    <span class="history-nav-copy">
+                        <strong>{{ risk_name }}</strong>
+                        <small>
+                            {{ record.created_at.strftime('%d %b %Y · %I:%M %p') if record.created_at else 'Date unavailable' }}
+                        </small>
+                    </span>
+
+                    <i class="fa-solid fa-chevron-right history-nav-arrow"></i>
+                </a>
+
+                {% else %}
+                <div class="history-empty-side">
+                    <i class="fa-regular fa-folder-open"></i>
+                    No saved predictions yet.
+                </div>
+                {% endfor %}
+            </nav>
+        </div>
+
+        <a href="{{ url_for('detect') }}" class="history-new-btn">
+            <i class="fa-solid fa-plus"></i>
+            New Prediction
+        </a>
+
+        <div class="history-side-footer">
+            <i class="fa-solid fa-lock me-1"></i>
+            Your reports are linked to your account.
+        </div>
+
+    </aside>
+
+    <main class="history-main">
+
+        <div class="history-topbar">
+            <div>
+                <div class="history-eyebrow">HEART HEALTH DASHBOARD</div>
+                <h1 class="history-page-title">Prediction History</h1>
+                <p class="history-page-desc">
+                    Review previous screening results, input values,
+                    saved AI assessments and recommendations.
+                </p>
+            </div>
+
+            <a href="{{ url_for('detect') }}" class="history-action-btn">
+                <i class="fa-solid fa-plus"></i>
+                Run New Prediction
+            </a>
+        </div>
+
+        {% if not history_records %}
+
+        <section class="history-card">
+            <div class="history-empty-main">
+                <div class="empty-icon">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+
+                <h3>No prediction history yet</h3>
+
+                <p>
+                    Your saved prediction reports will appear here
+                    after you complete a prediction while logged in.
+                </p>
+
+                <a href="{{ url_for('detect') }}"
+                   class="history-new-btn"
+                   style="display:inline-flex;padding:12px 20px">
+
+                    <i class="fa-solid fa-stethoscope"></i>
+                    Start Your First Prediction
+                </a>
+            </div>
+        </section>
+
+        {% elif not selected_record %}
+
+        <section class="history-card history-list-card">
+
+            <div class="history-card-head">
+                <h2>
+                    <i class="fa-solid fa-clock-rotate-left me-2 text-success"></i>
+                    All Saved Predictions
+                </h2>
+
+                <span class="badge bg-success-subtle text-success">
+                    {{ history_records|length }} Reports
+                </span>
+            </div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>Report Date</th>
+                            <th>Disease Probability</th>
+                            <th>Model Estimate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for record in history_records %}
+
+                        {% set p = record.disease_probability|float %}
+
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ record.created_at.strftime('%d %b %Y') if record.created_at else 'N/A' }}
+                                </strong>
+                                <br>
+                                <small>
+                                    {{ record.created_at.strftime('%I:%M %p') if record.created_at else '' }}
+                                </small>
+                            </td>
+
+                            <td>{{ "%.2f"|format(p) }}%</td>
+
+                            <td>
+                                {% if p >= 60 %}
+                                    <span class="risk-pill risk-high">Higher estimate</span>
+                                {% elif p >= 40 %}
+                                    <span class="risk-pill risk-moderate">Moderate estimate</span>
+                                {% else %}
+                                    <span class="risk-pill risk-low">Lower estimate</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <a class="history-action-btn"
+                                   href="{{ url_for('history', history_id=record.id) }}">
+                                    View Report
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </a>
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+        </section>
+
+        {% else %}
+
+        {% set disease_p = selected_record.disease_probability|float %}
+        {% set healthy_p = selected_record.healthy_probability|float %}
+        {% set saved_inputs = selected_record.input_data or {} %}
+
+        {% if disease_p >= 60 %}
+            {% set risk_label = 'Higher model estimate' %}
+            {% set risk_class = 'risk-high' %}
+        {% elif disease_p >= 40 %}
+            {% set risk_label = 'Moderate model estimate' %}
+            {% set risk_class = 'risk-moderate' %}
+        {% else %}
+            {% set risk_label = 'Lower model estimate' %}
+            {% set risk_class = 'risk-low' %}
+        {% endif %}
+
+        <section class="history-card">
+
+            <div class="history-card-head">
+                <div>
+                    <h2>
+                        <i class="fa-solid fa-file-medical me-2 text-success"></i>
+                        Prediction Report
+                    </h2>
+
+                    <small class="text-muted">
+                        {{ selected_record.created_at.strftime('%d %B %Y · %I:%M %p') if selected_record.created_at else 'Date unavailable' }}
+                    </small>
+                </div>
+
+                <button type="button"
+                        id="download-history-pdf"
+                        class="history-action-btn history-download">
+
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Download Report PDF
+                </button>
+            </div>
+
+            <div class="history-card-body">
+
+                <div class="history-summary-grid">
+
+                    <div class="history-stat">
+                        <div class="history-stat-label">
+                            Disease Probability
+                        </div>
+
+                        <div class="history-stat-value">
+                            {{ "%.2f"|format(disease_p) }}%
+                        </div>
+
+                        <div class="history-stat-note">
+                            Model-estimated probability
+                        </div>
+                    </div>
+
+                    <div class="history-stat">
+                        <div class="history-stat-label">
+                            Healthy Probability
+                        </div>
+
+                        <div class="history-stat-value">
+                            {{ "%.2f"|format(healthy_p) }}%
+                        </div>
+
+                        <div class="history-stat-note">
+                            Model-estimated probability
+                        </div>
+                    </div>
+
+                    <div class="history-stat">
+                        <div class="history-stat-label">
+                            Screening Band
+                        </div>
+
+                        <div class="mt-2">
+                            <span class="risk-pill {{ risk_class }}">
+                                {{ risk_label }}
+                            </span>
+                        </div>
+
+                        <div class="history-stat-note">
+                            Based on configured model thresholds
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="probability-row">
+                    <span>Disease model probability</span>
+                    <strong>{{ "%.2f"|format(disease_p) }}%</strong>
+                </div>
+
+                <div class="probability-track">
+                    <div class="probability-fill fill-disease"
+                         style="width:{{ [0, [disease_p, 100]|min]|max }}%">
+                    </div>
+                </div>
+
+                <div class="probability-row">
+                    <span>Healthy model probability</span>
+                    <strong>{{ "%.2f"|format(healthy_p) }}%</strong>
+                </div>
+
+                <div class="probability-track">
+                    <div class="probability-fill fill-healthy"
+                         style="width:{{ [0, [healthy_p, 100]|min]|max }}%">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- INPUT PARAMETERS -->
+
+        <section class="history-card">
+
+            <div class="history-card-head">
+                <h2>
+                    <i class="fa-solid fa-list-check me-2 text-success"></i>
+                    Input Parameters
+                </h2>
+            </div>
+
+            <div class="history-card-body">
+
+                {% set fields = [
+                    ('age', 'Age'),
+                    ('sex', 'Sex'),
+                    ('cp', 'Chest Pain Type'),
+                    ('trestbps', 'Resting Blood Pressure (mmHg)'),
+                    ('chol', 'Serum Cholesterol (mg/dL)'),
+                    ('fbs', 'Fasting Blood Sugar'),
+                    ('restecg', 'Resting ECG'),
+                    ('thalach', 'Maximum Heart Rate'),
+                    ('exang', 'Exercise-Induced Angina'),
+                    ('oldpeak', 'ST Depression (Oldpeak)'),
+                    ('slope', 'Peak Exercise ST Slope'),
+                    ('ca', 'Major Vessels (ca)'),
+                    ('thal', 'Thalassemia')
+                ] %}
+
+                {% set mappings = {
+                    'sex': {'1': 'Male', '0': 'Female', 1: 'Male', 0: 'Female'},
+                    'cp': {
+                        '0': 'Typical Angina', '1': 'Atypical Angina', '2': 'Non-anginal Pain', '3': 'Asymptomatic',
+                        0: 'Typical Angina', 1: 'Atypical Angina', 2: 'Non-anginal Pain', 3: 'Asymptomatic'
+                    },
+                    'fbs': {'1': 'True (> 120 mg/dl)', '0': 'False (<= 120 mg/dl)', 1: 'True (> 120 mg/dl)', 0: 'False (<= 120 mg/dl)'},
+                    'restecg': {
+                        '0': 'Normal', '1': 'ST-T Wave Abnormality', '2': 'Left Ventricular Hypertrophy',
+                        0: 'Normal', 1: 'ST-T Wave Abnormality', 2: 'Left Ventricular Hypertrophy'
+                    },
+                    'exang': {'1': 'Yes', '0': 'No', 1: 'Yes', 0: 'No'},
+                    'slope': {'0': 'Upsloping', '1': 'Flat', '2': 'Downsloping', 0: 'Upsloping', 1: 'Flat', 2: 'Downsloping'},
+                    'ca': {'0': '0 Vessels', '1': '1 Vessel', '2': '2 Vessels', '3': '3 Vessels', 0: '0 Vessels', 1: '1 Vessel', 2: '2 Vessels', 3: '3 Vessels'},
+                    'thal': {'1': 'Normal', '2': 'Fixed Defect', '3': 'Reversible Defect', 1: 'Normal', 2: 'Fixed Defect', 3: 'Reversible Defect'}
+                } %}
+
+                <div class="history-data-grid">
+
+                    {% for key, label in fields %}
+                    {% set raw_val = saved_inputs.get(key) %}
+                    
+                    {% if key in mappings and raw_val is not none and raw_val|string in mappings[key] %}
+                        {% set display_val = mappings[key][raw_val|string] %}
+                    {% else %}
+                        {% set display_val = raw_val if raw_val is not none and raw_val|string != '' else 'Not recorded' %}
+                    {% endif %}
+
+                    <div class="history-data-item">
+                        <small>{{ label }}</small>
+                        <strong>
+                            {{ display_val }}
+                        </strong>
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+            </div>
+        </section>
+
+        <!-- AI ASSESSMENT -->
+
+        <section class="history-card">
+
+            <div class="history-card-head">
+                <h2>
+                    <i class="fa-solid fa-brain me-2 text-success"></i>
+                    AI Clinical Assessment & Insights
+                </h2>
+            </div>
+
+            <div class="history-card-body">
+
+                {% set ai_data = selected_record.ai_analysis %}
+
+                {% if ai_data is string %}
+                    {% set ai_data = ai_data|trim %}
+                {% endif %}
+
+                {% if ai_data %}
+
+                    {% if ai_data is mapping %}
+
+                        {% for key, value in ai_data.items() %}
+
+                            {% if value %}
+
+                            <div class="history-analysis-block mb-3">
+
+                                <h4>
+                                    {{ key|replace('_', ' ')|title }}
+                                </h4>
+
+                                {% if value is string %}
+                                    <p class="history-analysis">{{ value }}</p>
+
+                                {% elif value is sequence %}
+                                    <ul class="mb-0">
+                                        {% for item in value %}
+                                        <li class="history-analysis mb-2">{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+
+                                {% else %}
+                                    <p class="history-analysis">{{ value }}</p>
+                                {% endif %}
+
+                            </div>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    {% elif ai_data is sequence and ai_data is not string %}
+
+                        {% for item in ai_data %}
+                        <div class="history-analysis-block mb-2">
+                            <p class="history-analysis">{{ item }}</p>
+                        </div>
+                        {% endfor %}
+
+                    {% else %}
+
+                        <div class="history-analysis-block">
+                            <p class="history-analysis">{{ ai_data }}</p>
+                        </div>
+
+                    {% endif %}
+
+                {% else %}
+
+                    <p class="history-page-desc mb-0">
+                        No AI assessment was saved for this prediction.
+                    </p>
+
+                {% endif %}
+
+            </div>
+        </section>
+
+        <!-- HEALTH RECOMMENDATIONS -->
+
+        <section class="history-card">
+
+            <div class="history-card-head">
+                <h2>
+                    <i class="fa-solid fa-shield-heart me-2 text-success"></i>
+                    Heart-health Recommendations
+                </h2>
+            </div>
+
+            <div class="history-card-body">
+
+                {% set tips = selected_record.health_tips or [] %}
+
+                {% if tips is string %}
+                    {% set tips = tips|trim %}
+                    {% if tips.startswith('[') %}
+                        {% set tips = tips|from_json if false else [tips] %}
+                    {% else %}
+                        {% set tips = tips.split('\n') %}
+                    {% endif %}
+                {% endif %}
+
+                {% if tips is mapping %}
+                    {% set tips = tips.values()|list %}
+                {% endif %}
+
+                {% if tips %}
+
+                <div class="history-tips">
+
+                    {% for tip in tips %}
+
+                    {% if tip %}
+
+                    <div class="history-tip">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>{{ tip }}</span>
+                    </div>
+
+                    {% endif %}
+
+                    {% endfor %}
+
+                </div>
+
+                {% else %}
+
+                <p class="history-page-desc mb-0">
+                    No recommendations were saved with this report.
+                </p>
+
+                {% endif %}
+
+            </div>
+        </section>
+
+        <div class="history-disclaimer mb-4">
+            <i class="fa-solid fa-circle-info mt-1"></i>
+
+            <span>
+                This is an automated machine-learning screening estimate
+                and AI-generated information, not a medical diagnosis.
+                Probability scores are model outputs, not a person's
+                confirmed medical risk. Discuss health concerns and
+                results with a qualified healthcare professional.
+            </span>
+        </div>
+
+        <!-- DATA FOR CLIENT-SIDE PDF -->
+
+        <script id="history-report-data" type="application/json">
+        {{ {
+            "patientName": current_user.username or "User",
+            "createdAt": selected_record.created_at.strftime('%d %b %Y, %I:%M %p') if selected_record.created_at else 'Date unavailable',
+            "prediction": selected_record.prediction,
+            "diseaseProbability": disease_p,
+            "healthyProbability": healthy_p,
+            "inputs": saved_inputs,
+            "aiAnalysis": selected_record.ai_analysis or '',
+            "healthTips": selected_record.health_tips or []
+        }|tojson }}
+        </script>
+
+        {% endif %}
+
+    </main>
+</div>
+
+<!-- PDF LIBRARIES: FRONTEND ONLY -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// Helper function to strip out emojis and invalid glyph symbols for PDF generation
+function cleanTextForPDF(text) {
+    if (!text) return "";
+    return String(text)
+        .replace(/[\u{1F000}-\u{1F9FF}]/gu, '') // Emoticons & symbols
+        .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Misc symbols
+        .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Dingbats
+        .replace(/[^\x00-\x7F]/g, '')           // Non-ASCII fallback removal
+        .trim();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const downloadButton =
+        document.getElementById("download-history-pdf");
+
+    if (!downloadButton) return;
+
+    downloadButton.addEventListener("click", function () {
+
+        const originalHTML = downloadButton.innerHTML;
+
+        downloadButton.disabled = true;
+
+        downloadButton.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+
+        try {
+
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                throw new Error("PDF library could not load. Refresh the page and try again.");
+            }
+
+            const dataNode =
+                document.getElementById("history-report-data");
+
+            if (!dataNode) {
+                throw new Error("Report information was not found.");
+            }
+
+            const report = JSON.parse(dataNode.textContent);
+
+            const { jsPDF } = window.jspdf;
+
+            const doc = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+
+            const W = doc.internal.pageSize.getWidth();
+            const H = doc.internal.pageSize.getHeight();
+
+            const M = 16;
+            const CW = W - 2 * M;
+
+            const navy = [24, 59, 69];
+            const teal = [5, 150, 105];
+            const muted = [110, 128, 135];
+            const border = [220, 230, 232];
+
+            let y = 47;
+
+            function safeText(value) {
+                if (value === null || value === undefined) {
+                    return "Not available";
+                }
+                if (typeof value === "object") {
+                    return cleanTextForPDF(JSON.stringify(value, null, 2));
+                }
+                return cleanTextForPDF(String(value));
+            }
+
+            function addHeading(label) {
+                if (y > H - 35) {
+                    doc.addPage();
+                    y = 20;
+                }
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.setTextColor(...navy);
+
+                doc.text(label, M, y);
+
+                y += 3;
+
+                doc.setDrawColor(...border);
+                doc.line(M, y, W - M, y);
+
+                y += 7;
+            }
+
+            function addFooter() {
+                const pageCount = doc.internal.getNumberOfPages();
+
+                for (let page = 1; page <= pageCount; page++) {
+                    doc.setPage(page);
+
+                    doc.setDrawColor(...border);
+                    doc.line(M, H - 15, W - M, H - 15);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.setTextColor(...muted);
+
+                    doc.text(
+                        "Heart Health Prediction System | Automated screening estimate only",
+                        M,
+                        H - 9
+                    );
+
+                    doc.text(
+                        "Page " + page + " of " + pageCount,
+                        W - M,
+                        H - 9,
+                        { align: "right" }
+                    );
+                }
+            }
+
+            function makeTable(options) {
+                doc.autoTable({
+                    ...options,
+
+                    margin: {
+                        left: M,
+                        right: M,
+                        bottom: 22
+                    },
+
+                    styles: {
+                        font: "helvetica",
+                        fontSize: 8,
+                        cellPadding: 4,
+                        textColor: [45, 55, 65],
+                        lineColor: border,
+                        lineWidth: 0.2,
+                        overflow: "linebreak",
+                        valign: "top",
+                        ...options.styles
+                    },
+
+                    headStyles: {
+                        fillColor: navy,
+                        textColor: [255, 255, 255],
+                        fontStyle: "bold",
+                        ...options.headStyles
+                    },
+
+                    theme: "grid"
+                });
+
+                y = doc.lastAutoTable.finalY + 9;
+            }
+
+            /* HEADER */
+
+            doc.setFillColor(...navy);
+            doc.rect(0, 0, W, 38, "F");
+
+            doc.setFillColor(...teal);
+            doc.rect(0, 36, W, 2, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(19);
+
+            doc.text("HEART HEALTH", M, 15);
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+
+            doc.text("PREDICTION & SCREENING REPORT", M, 22);
+            doc.text("MACHINE-LEARNING ASSESSMENT", M, 28);
+
+            doc.setFontSize(8);
+            doc.text("CONFIDENTIAL", W - M, 15, {
+                align: "right"
+            });
+
+            /* PATIENT INFORMATION */
+
+            addHeading("PATIENT INFORMATION");
+
+            makeTable({
+                startY: y,
+
+                head: [
+                    ["PATIENT NAME", "REPORT DATE"]
+                ],
+
+                body: [[
+                    safeText(report.patientName),
+                    safeText(report.createdAt)
+                ]]
+            });
+
+            /* SUMMARY */
+
+            const dp = Number(report.diseaseProbability) || 0;
+            const hp = Number(report.healthyProbability) || 0;
+
+            let estimate =
+                dp >= 60
+                    ? "Higher model estimate"
+                    : dp >= 40
+                        ? "Moderate model estimate"
+                        : "Lower model estimate";
+
+            addHeading("PREDICTION SUMMARY");
+
+            makeTable({
+                startY: y,
+
+                head: [
+                    ["MEASUREMENT", "MODEL OUTPUT"]
+                ],
+
+                body: [
+                    ["Disease probability", dp.toFixed(2) + "%"],
+                    ["Healthy probability", hp.toFixed(2) + "%"],
+                    ["Screening band", estimate],
+                    ["Prediction class", safeText(report.prediction)]
+                ]
+            });
+
+            /* PROBABILITY BARS */
+
+            function addProbability(label, value, color) {
+                if (y > H - 30) {
+                    doc.addPage();
+                    y = 20;
+                }
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(8);
+                doc.setTextColor(...navy);
+
+                doc.text(label, M, y);
+
+                doc.text(
+                    value.toFixed(2) + "%",
+                    W - M,
+                    y,
+                    { align: "right" }
+                );
+
+                y += 3;
+
+                doc.setFillColor(235, 240, 241);
+                doc.roundedRect(M, y, CW, 4, 1, 1, "F");
+
+                const width = Math.max(
+                    0,
+                    Math.min(CW, CW * value / 100)
+                );
+
+                if (width > 0) {
+                    doc.setFillColor(...color);
+                    doc.roundedRect(M, y, width, 4, 1, 1, "F");
+                }
+
+                y += 10;
+            }
+
+            addProbability(
+                "Disease model probability",
+                dp,
+                [220, 53, 69]
+            );
+
+            addProbability(
+                "Healthy model probability",
+                hp,
+                teal
+            );
+
+            /* INPUT PARAMETERS */
+
+            addHeading("CLINICAL INPUT PARAMETERS");
+
+            const labels = {
+                age: "Age",
+                sex: "Sex",
+                cp: "Chest Pain Type",
+                trestbps: "Resting Blood Pressure (mmHg)",
+                chol: "Serum Cholesterol (mg/dL)",
+                fbs: "Fasting Blood Sugar",
+                restecg: "Resting ECG",
+                thalach: "Maximum Heart Rate",
+                exang: "Exercise-Induced Angina",
+                oldpeak: "ST Depression (Oldpeak)",
+                slope: "Peak Exercise ST Slope",
+                ca: "Major Vessels (ca)",
+                thal: "Thalassemia"
+            };
+
+            const pdfMappings = {
+                sex: { '1': 'Male', '0': 'Female', 1: 'Male', 0: 'Female' },
+                cp: { '0': 'Typical Angina', '1': 'Atypical Angina', '2': 'Non-anginal Pain', '3': 'Asymptomatic', 0: 'Typical Angina', 1: 'Atypical Angina', 2: 'Non-anginal Pain', 3: 'Asymptomatic' },
+                fbs: { '1': 'True (> 120 mg/dl)', '0': 'False (<= 120 mg/dl)', 1: 'True (> 120 mg/dl)', 0: 'False (<= 120 mg/dl)' },
+                restecg: { '0': 'Normal', '1': 'ST-T Wave Abnormality', '2': 'Left Ventricular Hypertrophy', 0: 'Normal', 1: 'ST-T Wave Abnormality', 2: 'Left Ventricular Hypertrophy' },
+                exang: { '1': 'Yes', '0': 'No', 1: 'Yes', 0: 'No' },
+                slope: { '0': 'Upsloping', '1': 'Flat', '2': 'Downsloping', 0: 'Upsloping', 1: 'Flat', 2: 'Downsloping' },
+                ca: { '0': '0 Vessels', '1': '1 Vessel', '2': '2 Vessels', '3': '3 Vessels', 0: '0 Vessels', 1: '1 Vessel', 2: '2 Vessels', 3: '3 Vessels' },
+                thal: { '1': 'Normal', '2': 'Fixed Defect', '3': 'Reversible Defect', 1: 'Normal', 2: 'Fixed Defect', 3: 'Reversible Defect' }
+            };
+
+            const inputRows = Object.entries(labels).map(([key, label]) => {
+                let val = report.inputs && report.inputs[key] !== undefined ? report.inputs[key] : "Not recorded";
+                if (pdfMappings[key] && pdfMappings[key][val] !== undefined) {
+                    val = pdfMappings[key][val];
+                }
+                return [label, safeText(val)];
+            });
+
+            makeTable({
+                startY: y,
+
+                head: [
+                    ["PARAMETER", "RECORDED VALUE"]
+                ],
+
+                body: inputRows,
+
+                columnStyles: {
+                    0: { cellWidth: 75 }
+                },
+
+                styles: {
+                    fontSize: 8
+                }
+            });
+
+            /* AI ANALYSIS */
+
+            addHeading("AI-GENERATED ASSESSMENT & INSIGHTS");
+
+            function flattenAI(value, prefix = "") {
+                if (value === null || value === undefined) {
+                    return [];
+                }
+                if (typeof value === "string") {
+                    return [{
+                        heading: prefix,
+                        text: value
+                    }];
+                }
+                if (Array.isArray(value)) {
+                    return value.flatMap((item, index) =>
+                        flattenAI(item, prefix || ("Insight " + (index + 1)))
+                    );
+                }
+                if (typeof value === "object") {
+                    return Object.entries(value).flatMap(([key, item]) => {
+                        const heading = key
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, c => c.toUpperCase());
+                        return flattenAI(item, heading);
+                    });
+                }
+                return [{
+                    heading: prefix,
+                    text: String(value)
+                }];
+            }
+
+            const aiSections = flattenAI(report.aiAnalysis);
+
+            if (!aiSections.length) {
+                makeTable({
+                    startY: y,
+                    body: [["No AI assessment was saved."]]
+                });
+            } else {
+                aiSections.forEach(section => {
+                    if (section.heading) {
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(9);
+                        doc.setTextColor(...teal);
+
+                        const headingLines = doc.splitTextToSize(
+                            cleanTextForPDF(section.heading),
+                            CW
+                        );
+
+                        if (y + headingLines.length * 5 > H - 25) {
+                            doc.addPage();
+                            y = 20;
+                        }
+
+                        doc.text(headingLines, M, y);
+                        y += headingLines.length * 5 + 2;
+                    }
+
+                    const content = safeText(section.text);
+
+                    makeTable({
+                        startY: y,
+                        body: [[content]],
+
+                        styles: {
+                            fontSize: 8.5,
+                            cellPadding: 5,
+                            overflow: "linebreak",
+                            valign: "top"
+                        }
+                    });
+                });
+            }
+
+            /* HEALTH RECOMMENDATIONS */
+
+            addHeading("HEART-HEALTH RECOMMENDATIONS");
+
+            let tips = report.healthTips;
+
+            if (!Array.isArray(tips)) {
+                if (typeof tips === "object" && tips !== null) {
+                    tips = Object.values(tips);
+                } else {
+                    tips = tips ? [tips] : [];
+                }
+            }
+
+            tips = tips.filter(Boolean);
+
+            if (!tips.length) {
+                makeTable({
+                    startY: y,
+                    body: [["No recommendations were saved for this report."]]
+                });
+            } else {
+                const tipRows = tips.map((tip, index) => [
+                    String(index + 1),
+                    safeText(tip)
+                ]);
+
+                makeTable({
+                    startY: y,
+
+                    head: [
+                        ["NO.", "RECOMMENDATION"]
+                    ],
+
+                    body: tipRows,
+
+                    columnStyles: {
+                        0: { cellWidth: 15 }
+                    },
+
+                    styles: {
+                        fontSize: 8.5,
+                        cellPadding: 5,
+                        overflow: "linebreak"
+                    }
+                });
+            }
+
+            /* DISCLAIMER */
+
+            addHeading("IMPORTANT INFORMATION");
+
+            makeTable({
+                startY: y,
+
+                body: [[
+                    "This report contains automated machine-learning screening estimates and AI-generated information. It is not a medical diagnosis. Probability scores are model outputs, not confirmed medical risk. Consult a qualified healthcare professional about health concerns."
+                ]],
+
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 6,
+                    fillColor: [255, 248, 237],
+                    textColor: [128, 91, 37]
+                }
+            });
+
+            /* FOOTERS AND DOWNLOAD */
+
+            addFooter();
+
+            const safeName = cleanTextForPDF(
+                String(report.patientName || "User")
+            ).replace(/[^a-z0-9_-]/gi, "_");
+
+            const reportDate = new Date()
+                .toISOString()
+                .slice(0, 10);
+
+            doc.save(
+                "Heart_Health_Report_" +
+                safeName +
+                "_" +
+                reportDate +
+                ".pdf"
+            );
+
+        } catch (error) {
+            console.error("PDF generation error:", error);
+            alert(
+                error.message ||
+                "Unable to generate the PDF. Please try again."
+            );
+        } finally {
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = originalHTML;
+        }
+
+    });
+
+});
+</script>
+
+{% endblock %}
