@@ -513,96 +513,202 @@ def detect():
         app.logger.exception("Manual prediction failed: %s", e)
         return render_template("detect.html", form_data=request.form, result={"error": str(e)})
 
-
-@app.route("/detect_file", methods=["POST"])
+@app.route(
+    "/detect_file",
+    methods=["POST"]
+)
 @login_required
 def detect_file():
     if "report_image" not in request.files:
-        return render_template("detect.html", error=True, message="No report image was uploaded.", data={})
+        return render_template(
+            "detect.html",
+            error=True,
+            message="No report image was uploaded.",
+            data={}
+        )
 
     file = request.files["report_image"]
+
     if not file or not file.filename:
-        return render_template("detect.html", error=True, message="Please select an image.", data={})
+        return render_template(
+            "detect.html",
+            error=True,
+            message="Please select an image.",
+            data={}
+        )
 
     file_path = None
+
     try:
         if model is None:
             raise RuntimeError("ML model is not loaded.")
 
-        if not allowed_image(secure_filename(file.filename)):
+        original_filename = secure_filename(file.filename)
+
+        if not allowed_image(original_filename):
             raise ValueError("Please upload a PNG, JPG, JPEG or WEBP image.")
 
+        # Read the uploaded file ONCE.
         image_bytes = file.read()
+
         if not image_bytes:
             raise ValueError("The uploaded image is empty.")
 
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        # Verify the image using the bytes.
+        verify_image = Image.open(io.BytesIO(image_bytes))
+        verify_image.verify()
+
+        # Reopen from the same bytes after verification.
+        image = Image.open(io.BytesIO(image_bytes))
+        image = image.convert("RGB")
         image.thumbnail((1200, 1200))
 
+        # Unique temporary image path.
         filename = str(uuid.uuid4()) + ".jpg"
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         image.save(file_path, "JPEG", quality=90)
 
-        # Basic demo mapping fallback if OCR extraction isn't active
-        values = {f: 0 for f in FEATURE_NAMES}
-        values["age"] = 50
-        values["trestbps"] = 120
-        values["chol"] = 200
-        values["thalach"] = 150
+        # Extraction prompt.
+        extraction_instruction = f"""
+You are a precise clinical data extraction assistant. Your task is to extract the exact 13 features required for the heart disease prediction model from the uploaded lab report image.
 
-        converted_values = {f: float(values[f]) if f in NUMERICAL_COLS else str(values[f]) for f in FEATURE_NAMES}
-        result = run_prediction(converted_values, save_history=True)
+{FEATURE_NAMES}
+
+CRITICAL EXTRACTION & MAPPING RULES:
+
+1. **Return Format**: Return valid JSON only, containing strictly the 13 specified keys.
+2. **Patient Demographics**:
+   - `age`: Extract numerical age (e.g., 52).
+   - `sex`: Map "Male" or "M" to `1`, and "Female" or "F" to `0`.
+3. **Chest Pain Type (`cp`)**: Look for descriptions and map them to their strict integer code:
+   - "Typical Angina" -> `0`
+   - "Atypical Angina" -> `1`
+   - "Non-anginal Pain" -> `2`
+   - "Asymptomatic" -> `3`
+4. **Vitals & Blood Chemistry**:
+   - `trestbps`: Resting blood pressure numeric value in mmHg (e.g., 145).
+   - `chol`: Serum cholesterol numeric value in mg/dL (e.g., 275).
+   - `fbs`: Fasting blood sugar > 120 mg/dL. Map "Yes" / >120 to `1`, and "No" / <=120 to `0`.
+5. **Electrocardiogram & Stress Testing (`restecg`, `thalach`, `exang`, `oldpeak`, `slope`, `ca`, `thal`)**:
+   - `restecg`: Map "Normal" -> `0`, "ST-T Wave Abnormality" -> `1`, "Left Ventricular Hypertrophy" -> `2`.
+   - `thalach`: Max heart rate achieved numeric value (e.g., 155).
+   - `exang`: Exercise induced angina. Map "Yes" -> `1`, "No" -> `0`.
+   - `oldpeak`: ST depression numeric float value (e.g., 2.1).
+   - `slope`: Peak exercise ST slope. Map "Upsloping" -> `0`, "Flat" -> `1`, "Downsloping" -> `2`.
+   - `ca`: Number of major vessels colored (0-3). Extract the raw integer.
+   - `thal`: Thalassemia. Map "Normal" -> `3`, "Fixed Defect" -> `6`, "Reversible Defect" -> `7`.
+6. **Fallback**: If a value is completely missing or illegible in the report, output `null` for that specific key. Do not guess or infer values from unrelated narrative text.
+
+Expected JSON Structure:
+{{
+    "age": null,
+    "sex": null,
+    "cp": null,
+    "trestbps": null,
+    "chol": null,
+    "fbs": null,
+    "restecg": null,
+    "thalach": null,
+    "exang": null,
+    "oldpeak": null,
+    "slope": null,
+    "ca": null,
+    "thal": null
+}}
+"""# Ask Gemma to extract values.
+        response = ollama.chat(
+            model="gemma4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": extraction_instruction
+                },
+                {
+                    "role": "user",
+                    "content": "Extract the 13 required parameters from this uploaded report.",
+                    "images": [file_path]
+                }
+            ],
+            format="json",
+            options={
+                "temperature": 0
+            }
+        )
+
+        extracted = extract_json_object(response["message"]["content"])
+        if not isinstance(extracted, dict):
+            extracted = {}
+
+        # Prepare all 13 fields, preserving detected values and defaulting missing ones to None
+        values = {}
+        for feature in FEATURE_NAMES:
+            val = extracted.get(feature)
+            if val is not None and str(val).strip() != "" and str(val).lower() != "none":
+                values[feature] = val
+            else:
+                values[feature] = None
+
+        # Find missing values
+        missing_fields = [
+            feature for feature, value in values.items() if value is None
+        ]
+
+        # If any values are missing, return the partial extracted data so the user can review and fill them
+        if missing_fields:
+            return render_template(
+                "detect.html",
+                error=True,
+                warning=True,
+                message=(
+                    "Some values could not be extracted: "
+                    + ", ".join(missing_fields)
+                    + ". Please review and complete the fields manually."
+                ),
+                data=values,
+                missing_fields=missing_fields
+            )
+
+        # Convert values only when all fields are successfully present
+        converted_values = {}
+        for feature in FEATURE_NAMES:
+            if feature in NUMERICAL_COLS:
+                converted_values[feature] = float(values[feature])
+            else:
+                converted_values[feature] = str(values[feature])
+
+        # Run ML + AI directly.
+        result = run_prediction(
+            converted_values,
+            save_history=True
+        )
+
         result["source"] = "uploaded_report"
 
-        return render_template("detect.html", result=result, data=converted_values)
+        return render_template(
+            "detect.html",
+            result=result,
+            data=converted_values
+        )
 
     except Exception as e:
         db.session.rollback()
-        app.logger.exception("Image processing failed: %s", e)
-        return render_template("detect.html", error=True, message="Could not process uploaded report: " + str(e), data={})
+        app.logger.exception("Image extraction or prediction failed: %s", e)
+
+        return render_template(
+            "detect.html",
+            error=True,
+            message="Could not process the uploaded report. " + str(e),
+            data={}
+        )
 
     finally:
+        # Remove temporary image.
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except OSError:
-                pass
-
-
-def parse_history_value(value, default):
-    """Decode JSON stored in a TEXT column without changing the ORM object."""
-    if value is None:
-        return default
-
-    if not isinstance(value, str):
-        return value
-
-    value = value.strip()
-    if not value:
-        return default
-
-    try:
-        return json.loads(value)
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return value
-
-
-def normalize_history_tips(value):
-    """Always return health recommendations as a list for the template/PDF."""
-    parsed = parse_history_value(value, [])
-
-    if parsed is None:
-        return []
-    if isinstance(parsed, list):
-        return [str(item).strip() for item in parsed if item is not None and str(item).strip()]
-    if isinstance(parsed, dict):
-        return [str(item).strip() for item in parsed.values() if item is not None and str(item).strip()]
-    if isinstance(parsed, str):
-        # Old records may contain plain text rather than a JSON list.
-        lines = [line.strip(" -•	") for line in parsed.splitlines() if line.strip(" -•	")]
-        return lines or [parsed]
-    return [str(parsed)]
-
+                app.logger.warning("Could not remove temporary upload: %s", file_path)
+# =========================================================
 
 @app.route("/history")
 @login_required
