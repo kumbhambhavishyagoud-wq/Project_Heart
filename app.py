@@ -679,6 +679,186 @@ def login():
         return redirect(url_for("detect"))
 
     return render_template("login.html", error=False)
+@app.route(
+    "/hospital",
+    methods=["GET", "POST"]
+)
+@login_required
+def hospital():
+
+    if request.method == "GET":
+
+        return render_template(
+            "hospital.html"
+        )
+
+    if model is None:
+
+        return jsonify({
+            "error": "ML model is not loaded."
+        }), 500
+
+    if "csv_file" not in request.files:
+
+        return jsonify({
+            "error": "No CSV file was uploaded."
+        }), 400
+
+    file = request.files["csv_file"]
+
+    if not file.filename:
+
+        return jsonify({
+            "error": "Please select a CSV file."
+        }), 400
+
+    if not file.filename.lower().endswith(".csv"):
+
+        return jsonify({
+            "error": "Only CSV files are supported."
+        }), 400
+
+    try:
+
+        df = pd.read_csv(
+            io.BytesIO(file.read())
+        )
+
+        missing_columns = [
+
+            feature
+
+            for feature in FEATURE_NAMES
+
+            if feature not in df.columns
+
+        ]
+
+        if missing_columns:
+
+            return jsonify({
+
+                "error": (
+                    "Missing required columns: "
+                    + ", ".join(missing_columns)
+                )
+
+            }), 400
+
+        if df.empty:
+
+            return jsonify({
+                "error": "The uploaded CSV contains no records."
+            }), 400
+
+        model_df = df[FEATURE_NAMES].copy()
+
+        # Convert numerical fields.
+        for col in NUMERICAL_COLS:
+
+            model_df[col] = pd.to_numeric(
+                model_df[col],
+                errors="coerce"
+            )
+
+        if model_df.isnull().any().any():
+
+            return jsonify({
+                "error": (
+                    "CSV contains missing or invalid values "
+                    "in the required model features."
+                )
+            }), 400
+
+        # Convert categorical fields.
+        for col in CATEGORICAL_COLS:
+
+            model_df[col] = model_df[col].astype(str)
+
+        predictions = model.predict(
+            model_df
+        )
+
+        probabilities = model.predict_proba(
+            model_df
+        )
+
+        classes = list(model.classes_)
+
+        class_indices = {
+
+            str(label): index
+
+            for index, label in enumerate(classes)
+
+        }
+
+        if "0" not in class_indices or "1" not in class_indices:
+
+            return jsonify({
+                "error": (
+                    "The loaded model does not contain "
+                    "the expected classes 0 and 1."
+                )
+            }), 500
+
+        disease_index = class_indices["0"]
+        healthy_index = class_indices["1"]
+
+        df["Target_Prediction"] = [
+
+            "positive" if str(p) == "0" else "negative"
+
+            for p in predictions
+
+        ]
+
+        df["Probability_Diseased"] = [
+
+            f"{float(row[disease_index]) * 100:.2f}%"
+
+            for row in probabilities
+
+        ]
+
+        df["Probability_Healthy"] = [
+
+            f"{float(row[healthy_index]) * 100:.2f}%"
+
+            for row in probabilities
+
+        ]
+
+        diseased_count = sum(
+            1 for p in predictions if str(p) == "0"
+        )
+
+        healthy_count = sum(
+            1 for p in predictions if str(p) == "1"
+        )
+
+        return jsonify({
+
+            "status": "success",
+
+            "healthy_count": healthy_count,
+
+            "diseased_count": diseased_count,
+
+            "csv_data": df.to_csv(index=False)
+
+        }), 200
+
+    except Exception as e:
+
+        app.logger.exception(
+            "Hospital CSV prediction failed: %s",
+            e
+        )
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 @app.route("/signin", methods=["GET", "POST"])
