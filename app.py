@@ -5,6 +5,7 @@ import json
 import uuid
 import logging
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import joblib
 import pandas as pd
@@ -54,6 +55,7 @@ app.config["SECRET_KEY"] = os.getenv(
 )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://sql12840059:s8maBNetYS@sql12.freesqldatabase.com:3306/sql12840059"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=30)
@@ -567,64 +569,88 @@ def detect_file():
                 pass
 
 
+def parse_history_value(value, default):
+    """Decode JSON stored in a TEXT column without changing the ORM object."""
+    if value is None:
+        return default
+
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+    if not value:
+        return default
+
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return value
+
+
+def normalize_history_tips(value):
+    """Always return health recommendations as a list for the template/PDF."""
+    parsed = parse_history_value(value, [])
+
+    if parsed is None:
+        return []
+    if isinstance(parsed, list):
+        return [str(item).strip() for item in parsed if item is not None and str(item).strip()]
+    if isinstance(parsed, dict):
+        return [str(item).strip() for item in parsed.values() if item is not None and str(item).strip()]
+    if isinstance(parsed, str):
+        # Old records may contain plain text rather than a JSON list.
+        lines = [line.strip(" -•	") for line in parsed.splitlines() if line.strip(" -•	")]
+        return lines or [parsed]
+    return [str(parsed)]
+
+
 @app.route("/history")
 @login_required
 def history():
-    history_records = PredictionHistory.query.filter_by(
+    """
+    Display the signed-in user's saved predictions.
+
+    Important: database TEXT columns are never overwritten with Python dict/list
+    values. That prevents SQLAlchemy autoflush from trying to save parsed data.
+    """
+    records = PredictionHistory.query.filter_by(
         user_id=current_user.id
     ).order_by(
         PredictionHistory.created_at.desc()
     ).all()
 
-    # Parse JSON text or handle None safely for all records
-    for record in history_records:
-        if record.input_data is None:
-            record.input_data = {}
-        elif isinstance(record.input_data, str):
-            try:
-                record.input_data = json.loads(record.input_data)
-            except Exception:
-                record.input_data = {}
-
-        if record.health_tips is None:
-            record.health_tips = []
-        elif isinstance(record.health_tips, str):
-            try:
-                parsed_tips = json.loads(record.health_tips)
-                record.health_tips = parsed_tips if isinstance(parsed_tips, list) else [parsed_tips]
-            except Exception:
-                record.health_tips = [record.health_tips]
-
-    history_id = request.args.get("history_id", type=int)
+    history_records = []
     selected_record = None
+    history_id = request.args.get("history_id", type=int)
 
-    if history_id:
-        selected_record = PredictionHistory.query.filter_by(
-            id=history_id,
-            user_id=current_user.id
-        ).first()
+    for record in records:
+        parsed_inputs = parse_history_value(record.input_data, {})
+        if not isinstance(parsed_inputs, dict):
+            parsed_inputs = {}
 
-        if selected_record is None:
-            flash("Report not found.", "warning")
-            return redirect(url_for("history"))
-        
-        # Parse selected record safely as well
-        if selected_record.input_data is None:
-            selected_record.input_data = {}
-        elif isinstance(selected_record.input_data, str):
-            try:
-                selected_record.input_data = json.loads(selected_record.input_data)
-            except Exception:
-                selected_record.input_data = {}
+        parsed_tips = normalize_history_tips(record.health_tips)
 
-        if selected_record.health_tips is None:
-            selected_record.health_tips = []
-        elif isinstance(selected_record.health_tips, str):
-            try:
-                parsed_tips = json.loads(selected_record.health_tips)
-                selected_record.health_tips = parsed_tips if isinstance(parsed_tips, list) else [parsed_tips]
-            except Exception:
-                selected_record.health_tips = [selected_record.health_tips]
+        # A separate view object keeps the SQLAlchemy model untouched.
+        history_item = SimpleNamespace(
+            id=record.id,
+            user_id=record.user_id,
+            created_at=record.created_at,
+            prediction=record.prediction,
+            disease_probability=record.disease_probability,
+            healthy_probability=record.healthy_probability,
+            input_data=parsed_inputs,
+            ai_analysis=record.ai_analysis,
+            health_tips=parsed_tips
+        )
+
+        history_records.append(history_item)
+
+        if history_id is not None and record.id == history_id:
+            selected_record = history_item
+
+    if history_id is not None and selected_record is None:
+        flash("Report not found.", "warning")
+        return redirect(url_for("history"))
 
     return render_template(
         "history.html",
