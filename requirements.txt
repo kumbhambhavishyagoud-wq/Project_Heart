@@ -1,4 +1,3 @@
-blinkers
 Flask
 Flask-Bcrypt
 Flask-Login
