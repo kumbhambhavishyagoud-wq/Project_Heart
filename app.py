@@ -6,6 +6,7 @@ import json
 import uuid
 import logging
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import joblib
 import pandas as pd
@@ -1645,6 +1646,39 @@ def logout():
     return redirect(
         url_for("home")
     )
+def parse_history_value(value, default):
+    """Decode JSON stored in a TEXT column without changing the ORM object."""
+    if value is None:
+        return default
+
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+    if not value:
+        return default
+
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return value
+
+
+def normalize_history_tips(value):
+    """Always return health recommendations as a list for the template/PDF."""
+    parsed = parse_history_value(value, [])
+
+    if parsed is None:
+        return []
+    if isinstance(parsed, list):
+        return [str(item).strip() for item in parsed if item is not None and str(item).strip()]
+    if isinstance(parsed, dict):
+        return [str(item).strip() for item in parsed.values() if item is not None and str(item).strip()]
+    if isinstance(parsed, str):
+        # Old records may contain plain text rather than a JSON list.
+        lines = [line.strip(" -•	") for line in parsed.splitlines() if line.strip(" -•	")]
+        return lines or [parsed]
+    return [str(parsed)]
 
 
 # =========================================================
