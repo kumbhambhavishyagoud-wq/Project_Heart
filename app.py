@@ -62,7 +62,9 @@ app.config["SECRET_KEY"] = os.getenv(
     "change-this-secret-key-in-your-env-file"
 )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://sql12840059:s8maBNetYS@sql12.freesqldatabase.com:3306/sql12840059"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "MYSQL_URL"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=30)
