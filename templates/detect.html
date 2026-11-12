@@ -558,9 +558,9 @@
                             <label class="form-label fw-medium small">Thalassemia (thal)</label>
                             <select class="form-select" name="thal" required>
                                 {% set current_thal = data.thal|string if data and data.thal is not none else request.form.thal %}
-                                <option value="3" {% if current_thal in ['3.0','3'] %}selected{% endif %}>3: Normal</option>
-                                <option value="6" {% if current_thal in ['6.0','6'] %}selected{% endif %}>6: Fixed Defect</option>
-                                <option value="7" {% if current_thal in ['7.0','7'] %}selected{% endif %}>7: Reversible Defect</option>
+                                <option value="3" {% if current_thal in ['0.0','0'] %}selected{% endif %}>3: Normal</option>
+                                <option value="6" {% if current_thal in ['1.0','1'] %}selected{% endif %}>6: Fixed Defect</option>
+                                <option value="7" {% if current_thal in ['2.0','2'] %}selected{% endif %}>7: Reversible Defect</option>
                             </select>
                         </div>
                     </div>
