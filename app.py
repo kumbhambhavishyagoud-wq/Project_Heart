@@ -366,6 +366,23 @@ def json_safe_values(values):
 
     return cleaned
 
+def get_default_extracted_values():
+    """Fallback values when Ollama report image extraction fails or is unavailable."""
+    return {
+        "age": 50,
+        "sex": "1",
+        "cp": "0",
+        "trestbps": 120,
+        "chol": 200,
+        "fbs": "0",
+        "restecg": "0",
+        "thalach": 150,
+        "exang": "0",
+        "oldpeak": 0.0,
+        "slope": "1",
+        "ca": 0,
+        "thal": "3"
+    }
 
 def get_model_probability_map(probabilities):
 
@@ -575,9 +592,13 @@ Write the assessment and recommendations in the required
 JSON structure.
 """
 
+    # Report-image extraction depends on Ollama. If unavailable, use safe defaults.
     if ollama is None:
-        app.logger.warning("Ollama Python package is not installed; using fallback AI assessment.")
-        return get_default_ai_assessment()
+        default_data = get_default_extracted_values()
+        return render_template("detect.html", error=True, warning=True, 
+                               message=("Ollama model not available. Automatic extraction used default fallback values. "
+                                        "Please review and update the parameters as needed."), 
+                               data=default_data, missing_fields=FEATURE_NAMES)
 
     try:
 
