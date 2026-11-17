@@ -15,6 +15,9 @@ import pandas as pd
 # the Ollama package or local Ollama service is unavailable.
 try:
     import ollama
+    # If running on Render, disable local Ollama automatically
+    if os.getenv("RENDER"):
+        ollama = None
 except ImportError:
     ollama = None
 
