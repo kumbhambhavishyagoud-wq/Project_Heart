@@ -369,23 +369,7 @@ def json_safe_values(values):
 
     return cleaned
 
-def get_default_extracted_values():
-    """Fallback values when Ollama report image extraction fails or is unavailable."""
-    return {
-        "age": 50,
-        "sex": "1",
-        "cp": "0",
-        "trestbps": 120,
-        "chol": 200,
-        "fbs": "0",
-        "restecg": "0",
-        "thalach": 150,
-        "exang": "0",
-        "oldpeak": 0.0,
-        "slope": "1",
-        "ca": 0,
-        "thal": "3"
-    }
+
 
 def get_model_probability_map(probabilities):
 
@@ -538,42 +522,25 @@ def generate_ai_assessment(
     disease_probability,
     healthy_probability
 ):
-
-    """
-    Generate a structured AI assessment using Ollama.
-
-    ML prediction and AI generation are independent.
-    An Ollama failure will not cancel the ML prediction.
-    """
+    if ollama is None:
+        app.logger.warning("Ollama is not available; returning default AI assessment.")
+        return get_default_ai_assessment()
 
     system_instruction = """
 You are a supportive clinical communication assistant.
-
 Analyze the supplied heart-health model inputs and screening output.
 
-Return ONLY valid JSON using exactly this structure:
-
+Return valid JSON ONLY using this exact structure:
 {
-    "analysis": "A concise, clear, and encouraging clinical-style summary written in user-friendly language, focusing on wellness insights without repetitive boilerplate disclaimers.",
-    "health_tips": [
-        "🥗 Recommendation 1 with emoji",
-        "🏃 Recommendation 2 with emoji",
-        "🧘 Recommendation 3 with emoji",
-        "💧 Recommendation 4 with emoji"
-    ]
+  "analysis": "A concise, clear, and encouraging clinical-style summary.",
+  "health_tips": [
+    "Tip 1 with emoji",
+    "Tip 2 with emoji",
+    "Tip 3 with emoji"
+  ]
 }
-
-IMPORTANT RULES:
-
-1. Never diagnose or claim the patient definitely has or does not have heart disease.
-2. Do not invent symptoms, medical history, test results, or missing patient information.
-3. Provide 3 to 5 practical, engaging, and varied general wellness suggestions using friendly emojis.
-4. Keep tips distinct and fresh every time (avoid repetitive phrasing or recycling the exact same suggestions).
-5. Do not prescribe medicines, supplements, or specific medical treatments.
-6. Use simple, warm, professional, and encouraging language.
-7. Keep the complete response concise and under 200 words.
-8. Return JSON only. No Markdown fences or additional text.
 """
+
     user_prompt = f"""
 PATIENT INPUT PARAMETERS:
 
@@ -591,151 +558,71 @@ HEALTHY MODEL PROBABILITY:
 
 {healthy_probability:.2f}%
 
-Write the assessment and recommendations in the required
-JSON structure.
+Write the assessment and recommendations in the required JSON structure following these rules:
+1. Never diagnose or claim the patient definitely has or does not have heart disease.
+2. Do not invent symptoms, medical history, test results, or missing patient information.
+3. Provide 3 to 5 practical, engaging, and varied general wellness suggestions using friendly emojis.
+4. Keep tips distinct and fresh every time.
+5. Do not prescribe medicines, supplements, or specific medical treatments.
+6. Use simple, warm, professional, and encouraging language.
+7. Keep the complete response concise and under 200 words.
+8. Most importantly, keep the language as simple as possible.
 """
 
-    # Report-image extraction depends on Ollama. If unavailable, use safe defaults.
-    if ollama is None:
-        default_data = get_default_extracted_values()
-        return render_template("detect.html", error=True, warning=True, 
-                               message=("Ollama model not available. Automatic extraction used default fallback values. "
-                                        "Please review and update the parameters as needed."), 
-                               data=default_data, missing_fields=FEATURE_NAMES)
-
     try:
-
         response = ollama.chat(
-
             model="gemma4",
-
             messages=[
-
                 {
                     "role": "system",
                     "content": system_instruction
                 },
-
                 {
                     "role": "user",
                     "content": user_prompt
                 }
-
             ],
-
             format="json",
-
             options={
                 "temperature": 0.2
             }
-
         )
 
-        raw_response = response[
-            "message"
-        ]["content"].strip()
+        raw_response = response["message"]["content"].strip()
+        ai_result = extract_json_object(raw_response)
 
-        try:
+        if not isinstance(ai_result, dict):
+            ai_result = json.loads(raw_response)
 
-            ai_result = extract_json_object(
-                raw_response
-            )
-
-        except Exception:
-
-            app.logger.warning(
-                "Ollama returned malformed JSON. Retrying."
-            )
-
-            retry_response = ollama.chat(
-
-                model="gemma4",
-
-                messages=[
-
-                    {
-                        "role": "system",
-                        "content": (
-                            "Return only valid JSON with exactly "
-                            "two keys: analysis and health_tips. "
-                            "Do not invent information."
-                        )
-                    },
-
-                    {
-                        "role": "user",
-                        "content": (
-                            "Convert this response into valid JSON "
-                            "with the required keys:\n\n"
-                            + raw_response
-                        )
-                    }
-
-                ],
-
-                format="json",
-
-                options={
-                    "temperature": 0
-                }
-
-            )
-
-            ai_result = extract_json_object(
-                retry_response["message"]["content"]
-            )
-
-        # Validate analysis.
         analysis = ai_result.get("analysis")
-
         if not isinstance(analysis, str) or not analysis.strip():
-
             analysis = get_default_ai_assessment()["analysis"]
 
-        # Validate tips.
         tips = ai_result.get("health_tips", [])
-
         if isinstance(tips, str):
             tips = [tips]
-
         if not isinstance(tips, list):
             tips = []
 
         tips = [
-
             str(tip).strip()
-
             for tip in tips
-
-            if isinstance(tip, (str, int, float))
-            and str(tip).strip()
-
+            if isinstance(tip, (str, int, float)) and str(tip).strip()
         ]
 
-        # Avoid displaying an empty suggestions section.
         if len(tips) < 3:
-
             tips = get_default_ai_assessment()["health_tips"]
 
         tips = tips[:5]
 
         return {
-
             "analysis": analysis.strip(),
-
             "health_tips": tips,
-
             "ai_status": "success"
-
         }
 
     except Exception as e:
-
-        app.logger.exception(
-            "Ollama AI assessment failed: %s",
-            e
-        )
-
+        app.logger.exception("Ollama AI assessment failed: %s", e)
         return get_default_ai_assessment()
 
 
@@ -1059,6 +946,23 @@ def detect():
 # IMAGE EXTRACTION + AUTOMATIC PREDICTION
 # =========================================================
 
+DEFAULT_PARAMETERS = {
+    "age": 50,
+    "sex": "1",
+    "cp": "0",
+    "trestbps": 120,
+    "chol": 200,
+    "fbs": "0",
+    "restecg": "0",
+    "thalach": 150,
+    "exang": "0",
+    "oldpeak": 0.0,
+    "slope": "0",
+    "ca": "0",
+    "thal": "3"
+}
+
+
 @app.route(
     "/detect_file",
     methods=["POST"]
@@ -1089,18 +993,19 @@ def detect_file():
         if model is None:
             raise RuntimeError("ML model is not loaded.")
 
-        # Report-image extraction depends on Ollama. If it is unavailable,
-        # stop this upload cleanly without affecting other app features.
+        # If Ollama is not loaded, fall back to default parameters so the user
+        # can still review, edit, and run a manual prediction immediately.
         if ollama is None:
             return render_template(
                 "detect.html",
                 error=True,
+                warning=True,
                 message=(
-                    "Ollama model not available. Report image extraction "
-                    "cannot run right now. You can still use manual prediction "
-                    "and hospital CSV prediction."
+                    "Ollama model not available. Default parameters have been "
+                    "loaded below—please review and adjust them manually before predicting."
                 ),
-                data={}
+                data=DEFAULT_PARAMETERS.copy(),
+                missing_fields=list(DEFAULT_PARAMETERS.keys())
             )
 
         original_filename = secure_filename(file.filename)
@@ -1137,26 +1042,43 @@ You are a precise clinical data extraction assistant. Your task is to extract th
 CRITICAL EXTRACTION & MAPPING RULES:
 
 1. **Return Format**: Return valid JSON only, containing strictly the 13 specified keys.
+
 2. **Patient Demographics**:
-   - `age`: Extract numerical age (e.g., 52).
-   - `sex`: Map "Male" or "M" to `1`, and "Female" or "F" to `0`.
+- `age`: Extract numerical age (e.g., 52).
+
+- `sex`: Map "Male" or "M" to `1`, and "Female" or "F" to `0`.
+
 3. **Chest Pain Type (`cp`)**: Look for descriptions and map them to their strict integer code:
-   - "Typical Angina" -> `0`
-   - "Atypical Angina" -> `1`
-   - "Non-anginal Pain" -> `2`
-   - "Asymptomatic" -> `3`
+- "Typical Angina" -> `0`
+
+- "Atypical Angina" -> `1`
+
+- "Non-anginal Pain" -> `2`
+
+- "Asymptomatic" -> `3`
+
 4. **Vitals & Blood Chemistry**:
-   - `trestbps`: Resting blood pressure numeric value in mmHg (e.g., 145).
-   - `chol`: Serum cholesterol numeric value in mg/dL (e.g., 275).
-   - `fbs`: Fasting blood sugar > 120 mg/dL. Map "Yes" / >120 to `1`, and "No" / <=120 to `0`.
+- `trestbps`: Resting blood pressure numeric value in mmHg (e.g., 145).
+
+- `chol`: Serum cholesterol numeric value in mg/dL (e.g., 275).
+
+- `fbs`: Fasting blood sugar > 120 mg/dL. Map "Yes" / >120 to `1`, and "No" / <=120 to `0`.
+
 5. **Electrocardiogram & Stress Testing (`restecg`, `thalach`, `exang`, `oldpeak`, `slope`, `ca`, `thal`)**:
-   - `restecg`: Map "Normal" -> `0`, "ST-T Wave Abnormality" -> `1`, "Left Ventricular Hypertrophy" -> `2`.
-   - `thalach`: Max heart rate achieved numeric value (e.g., 155).
-   - `exang`: Exercise induced angina. Map "Yes" -> `1`, "No" -> `0`.
-   - `oldpeak`: ST depression numeric float value (e.g., 2.1).
-   - `slope`: Peak exercise ST slope. Map "Upsloping" -> `0`, "Flat" -> `1`, "Downsloping" -> `2`.
-   - `ca`: Number of major vessels colored (0-3). Extract the raw integer.
-   - `thal`: Thalassemia. Map "Normal" -> `3`, "Fixed Defect" -> `6`, "Reversible Defect" -> `7`.
+- `restecg`: Map "Normal" -> `0`, "ST-T Wave Abnormality" -> `1`, "Left Ventricular Hypertrophy" -> `2`.
+
+- `thalach`: Max heart rate achieved numeric value (e.g., 155).
+
+- `exang`: Exercise induced angina. Map "Yes" -> `1`, "No" -> `0`.
+
+- `oldpeak`: ST depression numeric float value (e.g., 2.1).
+
+- `slope`: Peak exercise ST slope. Map "Upsloping" -> `0`, "Flat" -> `1`, "Downsloping" -> `2`.
+
+- `ca`: Number of major vessels colored (0-3). Extract the raw integer.
+
+- `thal`: Thalassemia. Map "Normal" -> `3`, "Fixed Defect" -> `6`, "Reversible Defect" -> `7`.
+
 6. **Fallback**: If a value is completely missing or illegible in the report, output `null` for that specific key. Do not guess or infer values from unrelated narrative text.
 
 Expected JSON Structure:
@@ -1175,7 +1097,8 @@ Expected JSON Structure:
     "ca": null,
     "thal": null
 }}
-"""# Ask Gemma to extract values.
+"""
+        # Ask Gemma to extract values.
         try:
             response = ollama.chat(
                 model="gemma4",
@@ -1203,12 +1126,13 @@ Expected JSON Structure:
             return render_template(
                 "detect.html",
                 error=True,
+                warning=True,
                 message=(
-                    "Ollama model not available. Report image extraction "
-                    "could not be completed. You can still use manual prediction "
-                    "and hospital CSV prediction."
+                    "Ollama model not available. Default parameters have been "
+                    "loaded below—please review and adjust them manually before predicting."
                 ),
-                data={}
+                data=DEFAULT_PARAMETERS.copy(),
+                missing_fields=list(DEFAULT_PARAMETERS.keys())
             )
 
         extracted = extract_json_object(response["message"]["content"])
